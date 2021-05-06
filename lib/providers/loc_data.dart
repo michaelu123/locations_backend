@@ -4,7 +4,8 @@ import 'package:locations/providers/markers.dart';
 
 class LocData with ChangeNotifier {
   // data read from / written to DB
-  Map locDaten = {};
+  List locDaten = [];
+  int datenIndex = 0;
   List locImages = [];
   int imagesIndex = 0;
   List locZusatz = [];
@@ -13,7 +14,7 @@ class LocData with ChangeNotifier {
 
   void dataFor(String table, Map data) {
     isZusatz = table == "zusatz";
-    locDaten = data["daten"].length > 0 ? data["daten"][0] : {};
+    locDaten = data["daten"]; // newest is last
     locZusatz = data["zusatz"];
     locImages = data["images"];
     imagesIndex = 0;
@@ -21,7 +22,7 @@ class LocData with ChangeNotifier {
   }
 
   void clearLocData() {
-    locDaten = {};
+    locDaten = [];
     locZusatz = [];
     locImages = [];
     isZusatz = false;
@@ -56,20 +57,20 @@ class LocData with ChangeNotifier {
       }
     } else {
       // print("setDaten $name $type $val");
-      final v = locDaten[name];
+      final v = locDaten[datenIndex][name];
       if (v != val) {
-        locDaten[name] = val;
+        locDaten[datenIndex][name] = val;
         res =
             await LocationsDB.updateRowDB("daten", region, name, val, userName);
         // print("LocDatum $name changed from $v to $val");
         final created = res["created"];
         if (created != null) {
-          locDaten["created"] = created;
-          locDaten["modified"] = created;
+          locDaten[datenIndex]["created"] = created;
+          locDaten[datenIndex]["modified"] = created;
         }
         final modified = res["modified"];
         if (modified != null) {
-          locDaten["modified"] = modified;
+          locDaten[datenIndex]["modified"] = modified;
         }
         notifyListeners();
       }
@@ -78,7 +79,8 @@ class LocData with ChangeNotifier {
     final coord = Coord();
     coord.lat = LocationsDB.lat;
     coord.lon = LocationsDB.lon;
-    coord.quality = LocationsDB.qualityOfLoc(locDaten, locZusatz);
+    coord.quality =
+        LocationsDB.qualityOfLoc(locDaten[datenIndex], locZusatz, 1);
     coord.hasImage = locImages.length > 0;
     markers.current(coord);
     // no notify
@@ -91,7 +93,8 @@ class LocData with ChangeNotifier {
       if (zusatzIndex >= locZusatz.length) zusatzIndex = 0;
       t = locZusatz[zusatzIndex][name];
     } else {
-      t = locDaten[name];
+      if (datenIndex >= locDaten.length) datenIndex = 0;
+      t = locDaten[datenIndex][name];
     }
     if (t == null) return "";
     if (type == "bool") return t == 1 ? "ja" : "nein";
@@ -112,12 +115,40 @@ class LocData with ChangeNotifier {
     }
   }
 
+  void addDaten() {
+    locDaten.add(Map<String, Object>());
+    datenIndex = 0;
+    notifyListeners();
+  }
+
+  bool canDecDaten() {
+    return datenIndex > 0;
+  }
+
+  void decIndexDaten() {
+    if (datenIndex > 0) {
+      datenIndex--;
+      notifyListeners();
+    }
+  }
+
+  bool canIncDaten() {
+    return datenIndex < (locDaten.length - 1);
+  }
+
+  void incIndexDaten() {
+    if (datenIndex < locDaten.length - 1) {
+      datenIndex++;
+      notifyListeners();
+    }
+  }
+
   bool isEmpty() {
     return (isZusatz ? locZusatz.length : locDaten.length) == 0;
   }
 
   void addZusatz() {
-    locZusatz.add({});
+    locZusatz.add(Map<String, Object>());
     zusatzIndex = locZusatz.length - 1;
     notifyListeners();
   }
@@ -180,7 +211,8 @@ class LocData with ChangeNotifier {
     final coord = Coord();
     coord.lat = LocationsDB.lat;
     coord.lon = LocationsDB.lon;
-    coord.quality = LocationsDB.qualityOfLoc(locDaten, locZusatz);
+    coord.quality =
+        LocationsDB.qualityOfLoc(locDaten[datenIndex], locZusatz, 1);
     coord.hasImage = locImages.length > 0;
     markers.current(coord);
 
@@ -196,7 +228,8 @@ class LocData with ChangeNotifier {
     final coord = Coord();
     coord.lat = LocationsDB.lat;
     coord.lon = LocationsDB.lon;
-    coord.quality = LocationsDB.qualityOfLoc(locDaten, locZusatz);
+    coord.quality =
+        LocationsDB.qualityOfLoc(locDaten[datenIndex], locZusatz, 1);
     coord.hasImage = locImages.length > 0;
     markers.current(coord);
 

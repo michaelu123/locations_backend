@@ -76,6 +76,7 @@ class Markers extends ChangeNotifier {
   }
 
   void add(Map map, Coord coord) {
+    if (coord.quality < 0) return;
     final m = useGoogle ? coord2MarkerG(coord) : coord2MarkerF(coord);
     String latRound = roundDS(coord.lat, stellen);
     String lonRound = roundDS(coord.lon, stellen);

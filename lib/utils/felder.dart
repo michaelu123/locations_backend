@@ -59,7 +59,7 @@ class Felder {
         final feld = felder[index];
         final feldType = feld["type"];
         return TextField(
-          enabled: index < felderLength - 3,
+          enabled: index < felderLength - 4,
           textInputAction: TextInputAction.next,
           controller: controllers[index],
           focusNode: focusNodes[index],
@@ -150,6 +150,7 @@ class Felder {
     try {
       if (feldType == "bool") return yes(text);
       if (feldType == "int" || feldType == "prozent") {
+        if (text.isEmpty) return ["", null];
         int v = int.parse(text);
         if (feldType == "int") return [text, v];
         if (v < 0 || v > 100) return ["", null];

@@ -8,6 +8,7 @@ class Coord {
   double lon;
   int quality;
   bool hasImage;
+  int count;
 }
 
 class LocationsDB {
@@ -22,7 +23,7 @@ class LocationsDB {
   static String latRound, lonRound;
   static Map<String, List<String>> colNames = {};
   static List<Statement> statements;
-  static Map<String, Map<String, List<Map<String, Object>>>> locData;
+  static Map<String, Map<String, List<Map<String, Object>>>> locDataDB;
   static DateFormat dateFormatterDB = DateFormat('yyyy.MM.dd HH:mm:ss');
   static int nrInc = 1;
 
@@ -40,24 +41,25 @@ class LocationsDB {
     colNames["images"] = felder.map((feld) => feld["name"] as String).toList();
     lat = lon = null;
     statements = parseProgram(baseConfig.getProgram());
-    locData = {"daten": {}, "zusatz": {}, "images": {}};
+    // statements = parseProgram("if _count > 1 then return 2 end; return -1");
+
+    locDataDB = {"daten": {}, "zusatz": {}, "images": {}};
   }
 
   static String keyFor(String latRound, String lonRound) {
     return latRound + ":" + lonRound;
   }
 
-  static String keyOf(String table, Map<String, Object> data) {
+  static String keyOf(Map<String, Object> data) {
     return keyFor(data["lat_round"].toString(), data["lon_round"].toString());
   }
 
   static Future<int> insert(String table, Map<String, Object> data) async {
-    String key = keyOf(table, data);
-    data["new_or_modified"] = null;
-    List<Map<String, Object>> entries = locData[table][key];
+    String key = keyOf(data);
+    List<Map<String, Object>> entries = locDataDB[table][key];
     if (entries == null) {
       entries = [data];
-      locData[table][key] = entries;
+      locDataDB[table][key] = entries;
     } else {
       entries.add(data);
     }
@@ -66,7 +68,7 @@ class LocationsDB {
 
   static List<Map<String, Object>> getAllData(String table) {
     // https://stackoverflow.com/questions/15413248/how-to-flatten-a-list
-    return locData[table].values.expand((l) => l).toList();
+    return locDataDB[table].values.expand((l) => l).toList();
   }
 
   static Future<Map> dataForSameLoc() async {
@@ -82,7 +84,7 @@ class LocationsDB {
   }
 
   static List<Map<String, Object>> getLocData(table, latRound, lonRound) {
-    return locData[table][keyFor(latRound, lonRound)] ?? [];
+    return locDataDB[table][keyFor(latRound, lonRound)] ?? [];
   }
 
   static Future<Map> dataFor(double alat, double alon, int astellen) async {
@@ -103,7 +105,7 @@ class LocationsDB {
 
   static List<Map<String, Object>> getLocDataNew(String table) {
     List<Map<String, Object>> res = [];
-    for (List l in locData[table].values) {
+    for (List l in locDataDB[table].values) {
       for (Map m in l) {
         if (m["new_or_modified"] != null) {
           res.add(m);
@@ -168,9 +170,14 @@ class LocationsDB {
     assert(false);
   }
 
-  static int qualityOfLoc(Map daten, List zusatz) {
+  static int qualityOfLoc(Map daten, List zusatz, int count) {
+    daten["_count"] = count;
     int r = evalProgram(statements, daten, zusatz);
-    if (r == null || r < 0 || r > 2) r = 0;
+    if (r == null)
+      r = 0;
+    else if (r > 2)
+      r = 2;
+    else if (r < 0) r = -1;
     return r;
   }
 
@@ -184,14 +191,17 @@ class LocationsDB {
       coord.lat = res["lat"];
       coord.lon = res["lon"];
       coord.hasImage = false;
-      final key = '${res["lat_round"]}:${res["lon_round"]}';
+      final key = keyOf(res);
+      final prev = map[key];
+      coord.count = prev != null ? prev.count + 1 : 1;
+      // here, newer records replace older ones
       map[key] = coord;
       daten[key] = res;
     }
     if (hasZusatz) {
       final resZ = getAllData("zusatz");
       for (final res in resZ) {
-        final key = '${res["lat_round"]}:${res["lon_round"]}';
+        final key = keyOf(res);
         List l = zusatz[key];
         if (l == null) {
           l = [];
@@ -204,18 +214,20 @@ class LocationsDB {
           coord.lat = res["lat"];
           coord.lon = res["lon"];
           coord.hasImage = false;
+          coord.count = 0;
           map[key] = coord;
         }
       }
     }
     final resI = getAllData("images");
     for (final res in resI) {
-      final key = '${res["lat_round"]}:${res["lon_round"]}';
+      final key = keyOf(res);
       var coord = map[key];
       if (coord == null) {
         coord = Coord();
         coord.lat = res["lat"];
         coord.lon = res["lon"];
+        coord.count = 0;
         map[key] = coord;
       }
       coord.hasImage = true;
@@ -230,17 +242,18 @@ class LocationsDB {
       } else {
         l = [];
       }
-      coord.quality = qualityOfLoc(m, l);
+      coord.quality = qualityOfLoc(m, l, coord.count);
+      // coord.quality = coord.count > 2 ? 2 : coord.count;
     });
     return map.values.toList();
   }
 
   static void deleteAllLoc(double lat, double lon) {
-    locData = {"daten": {}, "zusatz": {}, "images": {}};
+    locDataDB = {"daten": {}, "zusatz": {}, "images": {}};
   }
 
   static void delLocDataOld(String table) {
-    for (List l in locData[table].values) {
+    for (List l in locDataDB[table].values) {
       l.removeWhere((m) => m["new_or_modified"] == null);
     }
   }
@@ -257,20 +270,20 @@ class LocationsDB {
   }
 
   static Future<void> deleteImage(String imgPath) async {
-    for (String k in locData["images"].keys) {
-      List l = locData["images"][k];
+    for (String k in locDataDB["images"].keys) {
+      List l = locDataDB["images"][k];
       l.removeWhere((m) => m["image_path"] == imgPath);
     }
   }
 
   static Future<void> fillWithDBValues(Map values) async {
-    Map newData = await getNewData(); // save new data
+    // Map newData = await getNewData(); // save new data
     for (String table in values.keys) {
-      bool isZusatz = table == "zusatz";
+      // bool isZusatz = table == "zusatz";
 
       List rows = values[table];
       if (rows == null) continue;
-      // sort for modification date: newer records overwrite older ones
+      // sort for modification date: newer records come after older ones
       switch (table) {
         case "daten":
           rows.sort((r1, r2) => (r1[2] as String).compareTo(r2[2] as String));
@@ -287,14 +300,15 @@ class LocationsDB {
         for (int i = 0; i < l; i++) {
           data[cnames[i]] = row[i];
         }
+        data["new_or_modified"] = null;
         insert(table, data);
       }
       // restore new data
-      rows = newData[table];
-      for (final map in rows) {
-        if (isZusatz) map['nr'] = nrInc++;
-        insert(table, map);
-      }
+      // rows = newData[table];
+      // for (final map in rows) {
+      //   if (isZusatz) map['nr'] = nrInc++;
+      //   insert(table, map);
+      // }
     }
   }
 

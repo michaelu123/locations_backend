@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:locations/providers/markers.dart';
+// import 'package:locations/providers/markers.dart';
 import 'package:locations/utils/db.dart';
-import 'package:locations/providers/photos.dart';
+// import 'package:locations/providers/photos.dart';
 import 'package:locations/providers/settings.dart';
 import 'package:locations/screens/zusatz.dart';
 import 'package:locations/screens/bilder.dart';
@@ -37,29 +37,29 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     final baseConfig = Provider.of<BaseConfig>(context);
     final settingsNL = Provider.of<Settings>(context, listen: false);
     final felder = baseConfig.getDatenFelder();
+    final locData = Provider.of<LocData>(context, listen: true);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(baseConfig.getName() + "/Daten"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_a_photo),
-            onPressed: () {
-              final photosNL = Provider.of<Photos>(context, listen: false);
-              final locDataNL = Provider.of<LocData>(context, listen: false);
-              final settingsNL = Provider.of<Settings>(context, listen: false);
-              final markersNL = Provider.of<Markers>(context, listen: false);
-              photosNL.takePicture(
-                locDataNL,
-                settingsNL.getConfigValueI("maxdim"),
-                settingsNL.getConfigValueS("username"),
-                settingsNL.getConfigValueS("region"),
-                baseConfig.getDbTableBaseName(),
-                markersNL,
-              );
-            },
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: const Icon(Icons.add_a_photo),
+        //     onPressed: () {
+        //       final photosNL = Provider.of<Photos>(context, listen: false);
+        //       final settingsNL = Provider.of<Settings>(context, listen: false);
+        //       final markersNL = Provider.of<Markers>(context, listen: false);
+        //       photosNL.takePicture(
+        //         locDataNL,
+        //         settingsNL.getConfigValueI("maxdim"),
+        //         settingsNL.getConfigValueS("username"),
+        //         settingsNL.getConfigValueS("region"),
+        //         baseConfig.getDbTableBaseName(),
+        //         markersNL,
+        //       );
+        //     },
+        //   ),
+        // ],
       ),
       body: Column(
         children: [
@@ -111,33 +111,65 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
               ),
             ],
           ),
-          Expanded(
-            child: settingsNL.getConfigValueS("username", defVal: "").isEmpty
-                ? const Center(
-                    child: Text(
-                      "Bitte erst einen Benutzer/Spitznamen eingeben",
-                      style: TextStyle(
-                        backgroundColor: Colors.white,
-                        color: Colors.black,
-                        fontSize: 20,
-                      ),
-                    ),
-                  )
-                : Consumer<LocData>(
-                    builder: (ctx, locDaten, _) {
-                      setFelder(locDaten, baseConfig, false);
-                      return ListView.builder(
-                        itemCount: felder.length,
-                        itemBuilder: (ctx, index) {
-                          return Padding(
-                            child: textFields[index],
-                            padding: EdgeInsets.all(10),
-                          );
-                        },
-                      );
-                    },
-                  ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                iconSize: 40,
+                icon: const Icon(Icons.arrow_back),
+                onPressed: locData.canDecDaten() ? locData.decIndexDaten : null,
+              ),
+              IconButton(
+                iconSize: 40,
+                icon: const Icon(Icons.add),
+                onPressed: locData.isEmpty() ? locData.addDaten : null,
+              ),
+              IconButton(
+                iconSize: 40,
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: locData.canIncDaten() ? locData.incIndexDaten : null,
+              ),
+            ],
           ),
+          if (locData.isEmpty())
+            const Center(
+              child: const Text(
+                "Noch keine Daten eingetragen",
+                style: const TextStyle(
+                  backgroundColor: Colors.white,
+                  color: Colors.black,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          if (!locData.isEmpty())
+            Expanded(
+              child: settingsNL.getConfigValueS("username", defVal: "").isEmpty
+                  ? const Center(
+                      child: Text(
+                        "Bitte erst einen Benutzer/Spitznamen eingeben",
+                        style: TextStyle(
+                          backgroundColor: Colors.white,
+                          color: Colors.black,
+                          fontSize: 20,
+                        ),
+                      ),
+                    )
+                  : Consumer<LocData>(
+                      builder: (ctx, locDaten, _) {
+                        setFelder(locDaten, baseConfig, false);
+                        return ListView.builder(
+                          itemCount: felder.length,
+                          itemBuilder: (ctx, index) {
+                            return Padding(
+                              child: textFields[index],
+                              padding: EdgeInsets.all(10),
+                            );
+                          },
+                        );
+                      },
+                    ),
+            ),
         ],
       ),
     );

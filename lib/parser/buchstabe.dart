@@ -8,7 +8,8 @@ class DeLetterCharPredicate extends CharacterPredicate {
   static final cuAe = 'Ä'.codeUnitAt(0);
   static final cuOe = 'Ö'.codeUnitAt(0);
   static final cuUe = 'Ü'.codeUnitAt(0);
-  static final cuss = 'ß'.codeUnitAt(0);
+  static final cusz = 'ß'.codeUnitAt(0);
+  static final cuus = '_'.codeUnitAt(0);
   static final cuaz = 'abcdefghijklmnopqrstuvwxyz'.codeUnits;
   static final cuAZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.codeUnits;
   static final cuDE = [
@@ -20,7 +21,8 @@ class DeLetterCharPredicate extends CharacterPredicate {
     cuAe,
     cuOe,
     cuUe,
-    cuss
+    cusz,
+    cuus,
   ];
   static final deArr = List<bool>.filled(256, false);
 

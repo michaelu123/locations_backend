@@ -69,6 +69,12 @@ class BaseConfig extends ChangeNotifier {
   /// These fields are displayed on the Daten- and Zusatz-Screen.
   List dates = [
     {
+      "name": "creator",
+      "hint_text": "Erzeugt von",
+      "helper_text": null,
+      "type": "string",
+    },
+    {
       "name": "region",
       "hint_text": "Region/Gebiet",
       "helper_text": null,
