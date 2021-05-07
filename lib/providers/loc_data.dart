@@ -11,14 +11,50 @@ class LocData with ChangeNotifier {
   List locZusatz = [];
   bool isZusatz = false;
   int zusatzIndex = 0;
+  List<List<bool>> checkBoxValuesList;
+  List<bool> checkBoxAllSet;
+  List<bool> checkBoxValues;
+  List<String> checkBoxIndex2Name;
+  Map<String, int> checkBoxName2Index;
 
   void dataFor(String table, Map data) {
     isZusatz = table == "zusatz";
     locDaten = data["daten"]; // newest is last
     locZusatz = data["zusatz"];
     locImages = data["images"];
+    datenIndex = 0;
+    zusatzIndex = 0;
     imagesIndex = 0;
     notifyListeners();
+  }
+
+  void fillCheckboxValues(List felder) {
+    int ld = locDaten.length;
+    int lf = felder.length;
+    checkBoxValuesList = List.filled(ld, null);
+    checkBoxAllSet = List.filled(ld, false);
+    checkBoxName2Index = Map<String, int>();
+    checkBoxIndex2Name = List.filled(lf, "");
+    for (int i = 0; i < ld; i++) {
+      List<bool> lb = List.filled(lf, false);
+      checkBoxValuesList[i] = lb;
+    }
+    checkBoxValues = checkBoxValuesList[datenIndex];
+    for (int i = 0; i < lf; i++) {
+      checkBoxIndex2Name[i] = felder[i]["name"];
+      checkBoxName2Index[felder[i]["name"]] = i;
+    }
+    for (int i = ld - 1; i >= 0; i--) {
+      for (int j = 0; j < lf; j++) {
+        bool set = false;
+        for (int k = i + 1; k < ld; k++) {
+          if (checkBoxValuesList[k][j]) set = true;
+        }
+        if (!set && locDaten[i][checkBoxIndex2Name[j]] != null)
+          checkBoxValuesList[i][j] = true;
+      }
+    }
+    setCBox("created", checkBoxName2Index["created"], true);
   }
 
   void clearLocData() {
@@ -38,7 +74,7 @@ class LocData with ChangeNotifier {
         int nr = locZusatz[zusatzIndex]["nr"];
         locZusatz[zusatzIndex][name] = val;
         res = await LocationsDB.updateRowDB(
-            "zusatz", region, name, val, userName,
+            "zusatz", region, name, val, userName, 0,
             nr: nr);
         nr = res["nr"];
         //print(
@@ -60,8 +96,8 @@ class LocData with ChangeNotifier {
       final v = locDaten[datenIndex][name];
       if (v != val) {
         locDaten[datenIndex][name] = val;
-        res =
-            await LocationsDB.updateRowDB("daten", region, name, val, userName);
+        res = await LocationsDB.updateRowDB(
+            "daten", region, name, val, userName, datenIndex);
         // print("LocDatum $name changed from $v to $val");
         final created = res["created"];
         if (created != null) {
@@ -128,6 +164,7 @@ class LocData with ChangeNotifier {
   void decIndexDaten() {
     if (datenIndex > 0) {
       datenIndex--;
+      checkBoxValues = checkBoxValuesList[datenIndex];
       notifyListeners();
     }
   }
@@ -139,6 +176,7 @@ class LocData with ChangeNotifier {
   void incIndexDaten() {
     if (datenIndex < locDaten.length - 1) {
       datenIndex++;
+      checkBoxValues = checkBoxValuesList[datenIndex];
       notifyListeners();
     }
   }
@@ -252,5 +290,61 @@ class LocData with ChangeNotifier {
     if (isZusatz == b) return;
     isZusatz = b;
     notifyListeners();
+  }
+
+  void setCBox(String name, int index, bool b) {
+    print("setCBox $name $index $datenIndex $b");
+    if (b) {
+      for (int i = 0; i < locDaten.length; i++)
+        checkBoxValuesList[i][index] = false;
+    }
+    checkBoxValues[index] = b;
+  }
+
+  bool getCboxValue(int index) {
+    return checkBoxValues[index];
+  }
+
+  void setAllBoxes(bool b) {
+    if (b) {
+      for (int i = 0; i < locDaten.length; i++) {
+        List<bool> lb = checkBoxValuesList[i];
+        int l = lb.length;
+        for (int j = 0; j < l; j++) lb[j] = false;
+        checkBoxAllSet[i] = false;
+      }
+    }
+    int l = checkBoxValues.length;
+    for (int j = 0; j < l; j++) checkBoxValues[j] = b;
+    checkBoxAllSet[datenIndex] = b;
+  }
+
+  bool getAllBoxesSetValue() {
+    return checkBoxAllSet[datenIndex];
+  }
+
+  bool moreThanOne() {
+    return locDaten.length > 1;
+  }
+
+  List vereinigen() {
+    int ld = locDaten.length;
+    int lf = checkBoxValues.length;
+    Map<String, Object> res = {...locDaten[ld - 1]};
+    for (int i = ld - 2; i >= 0; i--) {
+      for (int j = 0; j < lf; j++) {
+        if (checkBoxValuesList[i][j]) {
+          String name = checkBoxIndex2Name[j];
+          res[name] = locDaten[i][name];
+        }
+      }
+    }
+    res["new_or_modified"] = 1;
+    locDaten = [res];
+    List prev = LocationsDB.storeDaten(locDaten);
+    datenIndex = 0;
+    setAllBoxes(false);
+    notifyListeners();
+    return prev;
   }
 }

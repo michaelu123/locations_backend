@@ -19,6 +19,8 @@ class DatenScreen extends StatefulWidget {
 }
 
 class _DatenScreenState extends State<DatenScreen> with Felder {
+  List prevDaten;
+
   @override
   void initState() {
     super.initState();
@@ -26,10 +28,34 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     initFelder(context, baseConfigNL, false);
   }
 
+  void cboxChanged(int index, bool b) {
+    final baseConfigNL = Provider.of<BaseConfig>(context, listen: false);
+    final locDataNL = Provider.of<LocData>(context, listen: false);
+    List felder = baseConfigNL.getDatenFelder();
+    String name = felder[index]["name"];
+    setState(() => locDataNL.setCBox(name, index, b));
+  }
+
+  void allBoxesChanged(bool b) {
+    final locDataNL = Provider.of<LocData>(context, listen: false);
+    setState(() => locDataNL.setAllBoxes(b));
+  }
+
   @override
   void dispose() {
     super.dispose();
     deleteFelder();
+  }
+
+  void nochMal() async {
+    final locDataNL = Provider.of<LocData>(context, listen: false);
+    final baseConfigNL = Provider.of<BaseConfig>(context, listen: false);
+    LocationsDB.storeDaten(prevDaten);
+    prevDaten = null;
+    final map = await LocationsDB.dataFor(
+        LocationsDB.lat, LocationsDB.lon, baseConfigNL.stellen());
+    locDataNL.dataFor("daten", map);
+    locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
   }
 
   @override
@@ -42,24 +68,6 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     return Scaffold(
       appBar: AppBar(
         title: Text(baseConfig.getName() + "/Daten"),
-        // actions: [
-        //   IconButton(
-        //     icon: const Icon(Icons.add_a_photo),
-        //     onPressed: () {
-        //       final photosNL = Provider.of<Photos>(context, listen: false);
-        //       final settingsNL = Provider.of<Settings>(context, listen: false);
-        //       final markersNL = Provider.of<Markers>(context, listen: false);
-        //       photosNL.takePicture(
-        //         locDataNL,
-        //         settingsNL.getConfigValueI("maxdim"),
-        //         settingsNL.getConfigValueS("username"),
-        //         settingsNL.getConfigValueS("region"),
-        //         baseConfig.getDbTableBaseName(),
-        //         markersNL,
-        //       );
-        //     },
-        //   ),
-        // ],
       ),
       body: Column(
         children: [
@@ -109,6 +117,35 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                   'Bilder',
                 ),
               ),
+              if (locData.moreThanOne())
+                TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.lightGreen[200],
+                  ),
+                  onPressed: () => prevDaten = locData.vereinigen(),
+                  child: const Text(
+                    'Vereinigen',
+                  ),
+                ),
+              if (prevDaten != null)
+                TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.lightGreen[200],
+                  ),
+                  onPressed: nochMal,
+                  child: const Text(
+                    'Nochmal',
+                  ),
+                ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.lightGreen[200],
+                ),
+                onPressed: () {},
+                child: const Text(
+                  'Offiziell',
+                ),
+              ),
             ],
           ),
           Row(
@@ -131,6 +168,19 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
               ),
             ],
           ),
+          if (locData.moreThanOne())
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SizedBox(
+                  width: 60,
+                  child: Checkbox(
+                      value: locData.getAllBoxesSetValue(),
+                      onChanged: (b) => allBoxesChanged(b)),
+                ),
+                Expanded(child: Text("Alle Checkboxen setzen/löschen"))
+              ],
+            ),
           if (locData.isEmpty())
             const Center(
               child: const Text(
@@ -161,9 +211,23 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                         return ListView.builder(
                           itemCount: felder.length,
                           itemBuilder: (ctx, index) {
-                            return Padding(
-                              child: textFields[index],
-                              padding: EdgeInsets.all(10),
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                if (locData.moreThanOne())
+                                  SizedBox(
+                                    width: 60,
+                                    child: Checkbox(
+                                        value: locData.getCboxValue(index),
+                                        onChanged: (b) =>
+                                            cboxChanged(index, b)),
+                                  ),
+                                Expanded(
+                                    child: Padding(
+                                  padding: const EdgeInsets.all(10),
+                                  child: textFields[index],
+                                ))
+                              ],
                             );
                           },
                         );

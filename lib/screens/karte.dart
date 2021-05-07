@@ -137,8 +137,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
   // strange that FlutterMap does not have Marker.onTap...
   // see flutter_map_marker_popup for more elaborated code.
 
-  void onTappedF(
-      List<fm.Marker> markers, ll.LatLng latlng, LocData locData, int stellen) {
+  void onTappedF(List<fm.Marker> markers, ll.LatLng latlng) {
     double nearestLat = 0;
     double nearestLon = 0;
     double nearestDist = double.maxFinite;
@@ -165,8 +164,10 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     if (nearestDist > 0.0001) return;
     fmapController.move(ll.LatLng(nearestLat, nearestLon), fmapController.zoom);
     Future.delayed(const Duration(milliseconds: 500), () async {
-      final map = await LocationsDB.dataFor(nearestLat, nearestLon, stellen);
-      locData.dataFor("daten", map);
+      final map = await LocationsDB.dataFor(
+          nearestLat, nearestLon, baseConfigNL.stellen());
+      locDataNL.dataFor("daten", map);
+      locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
       Navigator.of(context).pushNamed(DatenScreen.routeName);
     });
   }
@@ -176,6 +177,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     Future.delayed(const Duration(milliseconds: 500), () async {
       final map = await LocationsDB.dataFor(lat, lon, baseConfigNL.stellen());
       locDataNL.dataFor("daten", map);
+      locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
       Navigator.of(context).pushNamed(DatenScreen.routeName);
     });
   }
@@ -554,8 +556,6 @@ class OsmMap extends StatelessWidget {
           state.onTappedF(
             markers,
             latlng,
-            state.locDataNL,
-            state.baseConfigNL.stellen(),
           );
         },
       ),

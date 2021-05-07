@@ -127,8 +127,8 @@ class LocationsDB {
     };
   }
 
-  static Future<Map> updateRowDB(
-      String table, String region, String name, Object val, String userName,
+  static Future<Map> updateRowDB(String table, String region, String name,
+      Object val, String userName, int index,
       {int nr}) async {
     final now = dateFormatterDB.format(DateTime.now());
     List l = getLocData(table, latRound, lonRound);
@@ -136,10 +136,12 @@ class LocationsDB {
       if (table == "zusatz") {
         l.removeWhere((li) => li["nr"] != nr);
       }
-      for (final li in l) {
-        li[name] = val;
-        li["new_or_modified"] = 1;
-      }
+      // for (final li in l) {
+      //   li[name] = val;
+      //   li["new_or_modified"] = 1;
+      // }
+      l[index][name] = val;
+      l[index]["new_or_modified"] = 1;
       if (l.length != 0) {
         return {"modified": now};
       }
@@ -330,5 +332,12 @@ class LocationsDB {
         data["new_or_modified"] = null;
       }
     }
+  }
+
+  static List<Map<String, Object>> storeDaten(List locDaten) {
+    String k = keyFor(latRound, lonRound);
+    List<Map<String, Object>> prev = locDataDB["daten"][k];
+    locDataDB["daten"][k] = locDaten.cast<Map<String, Object>>();
+    return prev;
   }
 }
