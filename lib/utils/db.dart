@@ -25,7 +25,7 @@ class LocationsDB {
   static List<Statement> statements;
   static Map<String, Map<String, List<Map<String, Object>>>> locDataDB;
   static DateFormat dateFormatterDB = DateFormat('yyyy.MM.dd HH:mm:ss');
-  static int nrInc = 1;
+  static int nrInc = 0;
 
   static Future<void> setBaseDB(BaseConfig baseConfig) async {
     if (dbName == baseConfig.getDbName()) return;
@@ -61,9 +61,19 @@ class LocationsDB {
       entries = [data];
       locDataDB[table][key] = entries;
     } else {
+      switch (table) {
+        case "daten": // server has primary key (creator, lat, lon)
+          final creator = data["creator"];
+          entries.removeWhere((row) => row["creator"] == creator);
+          break;
+        case "zusatz":
+          final nr = data["nr"];
+          entries.removeWhere((row) => row["nr"] == nr);
+          break;
+      }
       entries.add(data);
     }
-    return 1;
+    return entries.length - 1;
   }
 
   static List<Map<String, Object>> getAllData(String table) {
@@ -132,39 +142,23 @@ class LocationsDB {
       {int nr}) async {
     final now = dateFormatterDB.format(DateTime.now());
     List l = getLocData(table, latRound, lonRound);
-    if (table != "zusatz" || nr != null) {
+    Map<String, Object> m = l[index];
+    // m[name]=value already done by LocData.setFeld
+    m["new_or_modified"] = 1;
+    if (m["lat"] == null) {
+      m["region"] = region;
+      m["lat"] = lat;
+      m["lon"] = lon;
+      m["lat_round"] = latRound;
+      m["lon_round"] = lonRound;
+      m["creator"] = userName;
+      m[name] = val;
       if (table == "zusatz") {
-        l.removeWhere((li) => li["nr"] != nr);
+        m["nr"] = nrInc++;
       }
-      // for (final li in l) {
-      //   li[name] = val;
-      //   li["new_or_modified"] = 1;
-      // }
-      l[index][name] = val;
-      l[index]["new_or_modified"] = 1;
-      if (l.length != 0) {
-        return {"modified": now};
-      }
+      return {"created": now};
     }
-    Map<String, Object> data = {
-      "region": region,
-      "lat": lat,
-      "lon": lon,
-      "lat_round": latRound,
-      "lon_round": lonRound,
-      "creator": userName,
-      "created": now,
-      "modified": now,
-      "new_or_modified": 1,
-      name: val,
-    }; //);
-    if (table == "zusatz") {
-      data["nr"] = nrInc++;
-    }
-    insert(table, data);
-    // res = the created rowid
-    final res = 0; // ??
-    return {"nr": res, "created": now};
+    return {"modified": now};
   }
 
   static Future<void> updateImagesDB(
@@ -279,21 +273,12 @@ class LocationsDB {
   }
 
   static Future<void> fillWithDBValues(Map values) async {
-    // Map newData = await getNewData(); // save new data
+    Map newData = await getNewData(); // save new data
     for (String table in values.keys) {
-      // bool isZusatz = table == "zusatz";
+      bool isZusatz = table == "zusatz";
 
       List rows = values[table];
       if (rows == null) continue;
-      // sort for modification date: newer records come after older ones
-      switch (table) {
-        case "daten":
-          rows.sort((r1, r2) => (r1[2] as String).compareTo(r2[2] as String));
-          break;
-        case "zusatz":
-          rows.sort((r1, r2) => (r1[3] as String).compareTo(r2[3] as String));
-          break;
-      }
       final cnames = colNames[table];
       int l = cnames.length - 1; // no new_or_modified in newData
       for (final row in rows) {
@@ -303,14 +288,29 @@ class LocationsDB {
           data[cnames[i]] = row[i];
         }
         data["new_or_modified"] = null;
+        if (isZusatz) {
+          int nr = data["nr"];
+          if (nr >= nrInc) nrInc = nr + 1;
+        }
         insert(table, data);
       }
+      Map<String, List<Map<String, Object>>> entries = locDataDB[table];
+      for (List<Map<String, Object>> locs in entries.values) {
+        // sort for modification date: newer records come after older ones
+        if (table == "images") {
+          locs.sort((r1, r2) =>
+              (r1["created"] as String).compareTo(r2["created"] as String));
+        } else {
+          locs.sort((r1, r2) =>
+              (r1["modified"] as String).compareTo(r2["modified"] as String));
+        }
+      }
       // restore new data
-      // rows = newData[table];
-      // for (final map in rows) {
-      //   if (isZusatz) map['nr'] = nrInc++;
-      //   insert(table, map);
-      // }
+      rows = newData[table];
+      for (final map in rows) {
+        // if (isZusatz) map['nr'] = nrInc++;
+        insert(table, map);
+      }
     }
   }
 

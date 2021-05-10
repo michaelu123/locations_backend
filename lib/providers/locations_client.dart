@@ -128,9 +128,6 @@ class LocationsClient {
       String req = "/add/${tableBase}_$table";
       List vals = values[table];
       if (vals.length == 0) continue;
-      for (Map val in vals) {
-        val.remove("new_or_modified");
-      }
       if (table == "zusatz") {
         for (Map val in vals) {
           val["nr"] = null;
@@ -199,5 +196,13 @@ class LocationsClient {
     final req = "/config/$name";
     Map res = await reqWithRetry("GET", req);
     return res;
+  }
+
+  Future<void> official(String tableBase, Map<String, Object> val) async {
+    // values is a Map {colname:colvalue}, i.e. one DB row
+    Map<String, String> headers = {"Content-type": "application/json"};
+    String req = "/official/${tableBase}_daten";
+    String body = json.encode(val);
+    await reqWithRetry("POST", req, body: body, headers: headers);
   }
 }

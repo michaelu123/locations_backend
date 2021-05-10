@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:locations/providers/storage.dart';
 // import 'package:locations/providers/markers.dart';
 import 'package:locations/utils/db.dart';
 // import 'package:locations/providers/photos.dart';
@@ -20,24 +21,28 @@ class DatenScreen extends StatefulWidget {
 
 class _DatenScreenState extends State<DatenScreen> with Felder {
   List prevDaten;
+  BaseConfig baseConfigNL;
+  LocData locDataNL;
+  Storage strgClntNL;
+  Settings settingsNL;
 
   @override
   void initState() {
     super.initState();
-    final baseConfigNL = Provider.of<BaseConfig>(context, listen: false);
+    baseConfigNL = Provider.of<BaseConfig>(context, listen: false);
+    locDataNL = Provider.of<LocData>(context, listen: false);
+    strgClntNL = Provider.of<Storage>(context, listen: false);
+    settingsNL = Provider.of<Settings>(context, listen: false);
     initFelder(context, baseConfigNL, false);
   }
 
   void cboxChanged(int index, bool b) {
-    final baseConfigNL = Provider.of<BaseConfig>(context, listen: false);
-    final locDataNL = Provider.of<LocData>(context, listen: false);
     List felder = baseConfigNL.getDatenFelder();
     String name = felder[index]["name"];
     setState(() => locDataNL.setCBox(name, index, b));
   }
 
   void allBoxesChanged(bool b) {
-    final locDataNL = Provider.of<LocData>(context, listen: false);
     setState(() => locDataNL.setAllBoxes(b));
   }
 
@@ -48,8 +53,6 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
   }
 
   void nochMal() async {
-    final locDataNL = Provider.of<LocData>(context, listen: false);
-    final baseConfigNL = Provider.of<BaseConfig>(context, listen: false);
     LocationsDB.storeDaten(prevDaten);
     prevDaten = null;
     final map = await LocationsDB.dataFor(
@@ -58,10 +61,17 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
   }
 
+  void offiziell() async {
+    final String tableBase = baseConfigNL.getDbTableBaseName();
+    Map<String, Object> val = locDataNL.getDaten();
+    val["creator"] = "STAMM";
+    await strgClntNL.official(tableBase, val);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
-    final baseConfig = Provider.of<BaseConfig>(context);
-    final settingsNL = Provider.of<Settings>(context, listen: false);
+    final baseConfig = Provider.of<BaseConfig>(context, listen: true);
     final felder = baseConfig.getDatenFelder();
     final locData = Provider.of<LocData>(context, listen: true);
 
@@ -92,8 +102,6 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                     backgroundColor: Colors.amber,
                   ),
                   onPressed: () async {
-                    final locDataNL =
-                        Provider.of<LocData>(context, listen: false);
                     final map = await LocationsDB.dataForSameLoc();
                     locDataNL.dataFor("zusatz", map);
                     await Navigator.of(context)
@@ -137,15 +145,16 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                     'Nochmal',
                   ),
                 ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.lightGreen[200],
+              if (!locData.moreThanOne() && locData.creator() != "STAMM")
+                TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.lightGreen[200],
+                  ),
+                  onPressed: offiziell,
+                  child: const Text(
+                    'Offiziell',
+                  ),
                 ),
-                onPressed: () {},
-                child: const Text(
-                  'Offiziell',
-                ),
-              ),
             ],
           ),
           Row(
@@ -223,10 +232,11 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                                             cboxChanged(index, b)),
                                   ),
                                 Expanded(
-                                    child: Padding(
-                                  padding: const EdgeInsets.all(10),
-                                  child: textFields[index],
-                                ))
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: textFields[index],
+                                  ),
+                                )
                               ],
                             );
                           },

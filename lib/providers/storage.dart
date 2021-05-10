@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:locations/parser/val.dart';
 import 'package:locations/providers/locations_client.dart';
 
 import 'firebase.dart';
@@ -44,6 +45,12 @@ class Storage extends ChangeNotifier {
   }
 
   Future<void> post(String tableBase, Map values) async {
+    for (Map val in (values["daten"] ?? [])) {
+      val = val.cast<String, Object>();
+      val.removeWhere((k, v) => v is Value);
+      val.removeWhere((k, v) => k.startsWith("_"));
+      val.remove("new_or_modified");
+    }
     if (useLoc) return locClnt.post(tableBase, values);
     return fbClnt.post(tableBase, values);
   }
@@ -100,5 +107,13 @@ class Storage extends ChangeNotifier {
   Future<Map> getConfig(String config) async {
     if (useLoc) return locClnt.getConfig(config);
     return fbClnt.getConfig(config);
+  }
+
+  Future<void> official(String tableBase, Map<String, Object> val) {
+    val.removeWhere((k, v) => v is Value);
+    val.removeWhere((k, v) => k.startsWith("_"));
+    val.remove("new_or_modified");
+    if (useLoc) return locClnt.official(tableBase, val);
+    return fbClnt.official(tableBase, val);
   }
 }

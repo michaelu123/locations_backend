@@ -246,13 +246,12 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     }
   }
 
-  Future<void> speichern(
-      Settings settings, Storage strgClnt, BaseConfig baseConfig) async {
+  Future<void> speichern() async {
     if (message != null) return;
     try {
       setState(() => message = "Neue/geänderte Daten bestimmen");
       final Map newData = await LocationsDB.getNewData();
-      final String tableBase = baseConfig.getDbTableBaseName();
+      final String tableBase = baseConfigNL.getDbTableBaseName();
       final newImages = newData["images"];
       final newImagesLen = newImages.length;
       int i = 0;
@@ -260,13 +259,13 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
         final String imagePath = img["image_path"];
         i += 1;
         setState(() => message = "Bild $i von $newImagesLen");
-        final Map map = await strgClnt.postImage(tableBase, imagePath);
+        final Map map = await strgClntNL.postImage(tableBase, imagePath);
         final String url = map["url"];
         await LocationsDB.updateImagesDB(imagePath, "image_url", url);
         img["image_url"] = url;
       }
       setState(() => message = "Neue/geänderte Daten speichern");
-      await strgClnt.post(tableBase, newData);
+      await strgClntNL.post(tableBase, newData);
       await LocationsDB.clearNewOrModified();
     } finally {
       setState(() => message = null);
@@ -371,6 +370,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
                     final map = await LocationsDB.dataFor(
                         mapLat, mapLon, baseConfigNL.stellen());
                     locDataNL.dataFor("daten", map);
+                    locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
                     Navigator.of(context).pushNamed(DatenScreen.routeName);
                   },
                   child: const Text(
@@ -393,7 +393,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
                     backgroundColor: Colors.amber,
                   ),
                   onPressed: () async {
-                    await speichern(settingsNL, strgClntNL, baseConfigNL);
+                    await speichern();
                   },
                   child: const Text(
                     'Speichern',

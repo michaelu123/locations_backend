@@ -30,6 +30,7 @@ class LocData with ChangeNotifier {
 
   void fillCheckboxValues(List felder) {
     int ld = locDaten.length;
+    if (ld == 0) return;
     int lf = felder.length;
     checkBoxValuesList = List.filled(ld, null);
     checkBoxAllSet = List.filled(ld, false);
@@ -74,12 +75,12 @@ class LocData with ChangeNotifier {
         int nr = locZusatz[zusatzIndex]["nr"];
         locZusatz[zusatzIndex][name] = val;
         res = await LocationsDB.updateRowDB(
-            "zusatz", region, name, val, userName, 0,
+            "zusatz", region, name, val, userName, zusatzIndex,
             nr: nr);
-        nr = res["nr"];
+        // nr = res["nr"]; // nr does not change on backend
         //print(
         //    "LocZusatz index=$zusatzIndex nr=$nr $name changed from $v to $val");
-        if (nr != null) locZusatz[zusatzIndex]["nr"] = nr;
+        // if (nr != null) locZusatz[zusatzIndex]["nr"] = nr;
         final created = res["created"];
         if (created != null) {
           locZusatz[zusatzIndex]["created"] = created;
@@ -152,7 +153,9 @@ class LocData with ChangeNotifier {
   }
 
   void addDaten() {
-    locDaten.add(Map<String, Object>());
+    locDaten = [Map<String, Object>()];
+    List prev = LocationsDB.storeDaten(locDaten); // TODO
+    print("prev $prev");
     datenIndex = 0;
     notifyListeners();
   }
@@ -299,6 +302,17 @@ class LocData with ChangeNotifier {
         checkBoxValuesList[i][index] = false;
     }
     checkBoxValues[index] = b;
+    if (!b) {
+      List<bool> lb = checkBoxValuesList[locDaten.length - 1];
+      bool set = false;
+      for (int j = 0; j < locDaten.length - 1; j++) {
+        if (checkBoxValuesList[j][index]) {
+          set = true;
+          break;
+        }
+      }
+      if (!set) lb[index] = true;
+    }
   }
 
   bool getCboxValue(int index) {
@@ -317,6 +331,19 @@ class LocData with ChangeNotifier {
     int l = checkBoxValues.length;
     for (int j = 0; j < l; j++) checkBoxValues[j] = b;
     checkBoxAllSet[datenIndex] = b;
+    if (!b) {
+      List<bool> lb = checkBoxValuesList[locDaten.length - 1];
+      for (int i = 0; i < l; i++) {
+        bool set = false;
+        for (int j = 0; j < locDaten.length - 1; j++) {
+          if (checkBoxValuesList[j][i]) {
+            set = true;
+            break;
+          }
+        }
+        if (!set) lb[i] = true;
+      }
+    }
   }
 
   bool getAllBoxesSetValue() {
@@ -325,6 +352,11 @@ class LocData with ChangeNotifier {
 
   bool moreThanOne() {
     return locDaten.length > 1;
+  }
+
+  Map<String, Object> getDaten() {
+    if (locDaten.length == 1) return locDaten[0];
+    return null;
   }
 
   List vereinigen() {
@@ -346,5 +378,10 @@ class LocData with ChangeNotifier {
     setAllBoxes(false);
     notifyListeners();
     return prev;
+  }
+
+  String creator() {
+    if (locDaten.length != 1) return "";
+    return locDaten[0]["creator"];
   }
 }
