@@ -244,8 +244,17 @@ class LocationsDB {
     return map.values.toList();
   }
 
-  static void deleteAllLoc(double lat, double lon) {
-    locDataDB = {"daten": {}, "zusatz": {}, "images": {}};
+  static void delLocDataLatLon(String table, String latRound, String lonRound) {
+    final key = keyFor(latRound, lonRound);
+    locDataDB[table].remove(key);
+  }
+
+  static void deleteLoc(String latRound, String lonRound) {
+    delLocDataLatLon("daten", latRound, lonRound);
+    if (hasZusatz) {
+      delLocDataLatLon("zusatz", latRound, lonRound);
+    }
+    delLocDataLatLon("images", latRound, lonRound);
   }
 
   static void delLocDataOld(String table) {

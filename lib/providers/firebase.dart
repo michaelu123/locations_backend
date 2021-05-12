@@ -348,6 +348,10 @@ class FirebaseClient {
   Future<void> official(String tableBase, Map<String, Object> daten) {
     throw UnimplementedError();
   }
+
+  Future<void> deleteLoc(String tableBase, String latRound, String lonRound) {
+    throw UnimplementedError();
+  }
 }
 
 // like within, but sw/ne instead of circle/radius

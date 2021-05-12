@@ -18,6 +18,7 @@ import 'package:locations/screens/daten.dart';
 import 'package:locations/screens/splash_screen.dart';
 import 'package:locations/utils/db.dart';
 import 'package:locations/utils/felder.dart';
+import 'package:locations/utils/utils.dart';
 import 'package:locations/widgets/app_config.dart';
 import 'package:locations/widgets/crosshair.dart';
 import 'package:provider/provider.dart';
@@ -166,7 +167,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     Future.delayed(const Duration(milliseconds: 500), () async {
       final map = await LocationsDB.dataFor(
           nearestLat, nearestLon, baseConfigNL.stellen());
-      locDataNL.dataFor("daten", map);
+      locDataNL.dataFor(baseConfigNL.getDbTableBaseName(), "daten", map);
       locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
       Navigator.of(context).pushNamed(DatenScreen.routeName);
     });
@@ -176,7 +177,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
   Future<void> onTappedG(double lat, double lon) async {
     Future.delayed(const Duration(milliseconds: 500), () async {
       final map = await LocationsDB.dataFor(lat, lon, baseConfigNL.stellen());
-      locDataNL.dataFor("daten", map);
+      locDataNL.dataFor(baseConfigNL.getDbTableBaseName(), "daten", map);
       locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
       Navigator.of(context).pushNamed(DatenScreen.routeName);
     });
@@ -199,8 +200,13 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     }
   }
 
-  void deleteLoc(Markers markers) {
-    LocationsDB.deleteAllLoc(mapLat, mapLon);
+  Future<void> deleteLoc(Markers markers) async {
+    int stellen = baseConfigNL.stellen();
+    String tableBase = baseConfigNL.getDbTableBaseName();
+    String latRound = roundDS(mapLat, stellen);
+    String lonRound = roundDS(mapLon, stellen);
+    LocationsDB.deleteLoc(latRound, lonRound);
+    await strgClntNL.deleteLoc(tableBase, latRound, lonRound);
     markers.deleteLoc(mapLat, mapLon);
     setState2();
   }
@@ -369,7 +375,8 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
                   onPressed: () async {
                     final map = await LocationsDB.dataFor(
                         mapLat, mapLon, baseConfigNL.stellen());
-                    locDataNL.dataFor("daten", map);
+                    locDataNL.dataFor(
+                        baseConfigNL.getDbTableBaseName(), "daten", map);
                     locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
                     Navigator.of(context).pushNamed(DatenScreen.routeName);
                   },

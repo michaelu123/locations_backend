@@ -59,11 +59,13 @@ class _ImagesScreenState extends State<ImagesScreen>
     BaseConfig baseConfig,
     Markers markers,
     IndexModel indexModel,
+    Storage strgClnt,
   ) async {
     String imgPath = locData.deleteImage(markers);
     indexModel.set(locData.imagesIndex);
     await LocationsDB.deleteImage(imgPath);
     String tableBase = baseConfig.getDbTableBaseName();
+    await strgClnt.deleteImage(tableBase, imgPath);
     await deleteImageFile(tableBase, imgPath);
     // perhaps delete on Server?
     // or not delete if not newer lastStored?
@@ -129,6 +131,7 @@ class _ImagesScreenState extends State<ImagesScreen>
                       baseConfig,
                       markersNL,
                       indexModelNL,
+                      strgClnt,
                     ),
           ),
         ],
@@ -167,7 +170,8 @@ class _ImagesScreenState extends State<ImagesScreen>
                     ),
                     onPressed: () async {
                       final map = await LocationsDB.dataForSameLoc();
-                      locData.dataFor("daten", map);
+                      locData.dataFor(
+                          baseConfig.getDbTableBaseName(), "daten", map);
                       Navigator.of(context).pushNamed(DatenScreen.routeName);
                     },
                     child: const Text(

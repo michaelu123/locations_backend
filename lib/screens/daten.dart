@@ -33,7 +33,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     locDataNL = Provider.of<LocData>(context, listen: false);
     strgClntNL = Provider.of<Storage>(context, listen: false);
     settingsNL = Provider.of<Settings>(context, listen: false);
-    initFelder(context, baseConfigNL, false);
+    initFelder(context, false);
   }
 
   void cboxChanged(int index, bool b) {
@@ -57,7 +57,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     prevDaten = null;
     final map = await LocationsDB.dataFor(
         LocationsDB.lat, LocationsDB.lon, baseConfigNL.stellen());
-    locDataNL.dataFor("daten", map);
+    locDataNL.dataFor(baseConfigNL.getDbTableBaseName(), "daten", map);
     locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
   }
 
@@ -103,7 +103,8 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                   ),
                   onPressed: () async {
                     final map = await LocationsDB.dataForSameLoc();
-                    locDataNL.dataFor("zusatz", map);
+                    locDataNL.dataFor(
+                        baseConfigNL.getDbTableBaseName(), "zusatz", map);
                     await Navigator.of(context)
                         .pushNamed(ZusatzScreen.routeName);
                     // without the next statement, after pressing back button

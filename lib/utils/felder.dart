@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:locations/providers/markers.dart';
 import 'package:locations/providers/settings.dart';
+import 'package:locations/providers/storage.dart';
 import 'package:provider/provider.dart';
 
 import 'package:locations/providers/base_config.dart';
@@ -12,10 +13,12 @@ class Felder {
   List<TextField> textFields;
   List<TextEditingController> controllers;
 
-  void initFelder(BuildContext context, BaseConfig baseConfig, bool useZusatz) {
-    print("1initFelder ${baseConfig.base}");
-    List felder =
-        useZusatz ? baseConfig.getZusatzFelder() : baseConfig.getDatenFelder();
+  void initFelder(BuildContext context, bool useZusatz) {
+    final baseConfigNL = Provider.of<BaseConfig>(context, listen: false);
+    print("1initFelder ${baseConfigNL.base}");
+    List felder = useZusatz
+        ? baseConfigNL.getZusatzFelder()
+        : baseConfigNL.getDatenFelder();
     int felderLength = felder.length;
     focusNodes = List.generate(
       felderLength,
@@ -33,11 +36,12 @@ class Felder {
             final locDataNL = Provider.of<LocData>(context, listen: false);
             final markersNL = Provider.of<Markers>(context, listen: false);
             final settingsNL = Provider.of<Settings>(context, listen: false);
+            final strgClntNL = Provider.of<Storage>(context, listen: false);
             final userName = settingsNL.getConfigValueS("username");
             final region = settingsNL.getConfigValueS("region");
 
             locDataNL.setFeld(markersNL, region, felder[index]['name'],
-                felder[index]["type"], l[1], userName);
+                felder[index]["type"], l[1], userName, strgClntNL);
           }
         }
 
@@ -75,11 +79,12 @@ class Felder {
             final locDataNL = Provider.of<LocData>(context, listen: false);
             final markersNL = Provider.of<Markers>(context, listen: false);
             final settingsNL = Provider.of<Settings>(context, listen: false);
+            final strgClntNL = Provider.of<Storage>(context, listen: false);
             final userName = settingsNL.getConfigValueS("username");
             final region = settingsNL.getConfigValueS("region");
 
-            locDataNL.setFeld(
-                markersNL, region, feld['name'], feldType, l[1], userName);
+            locDataNL.setFeld(markersNL, region, feld['name'], feldType, l[1],
+                userName, strgClntNL);
             int x1 = (index + 1) % felderLength;
             if (controllers[x1].text.isEmpty) {
               FocusScope.of(context).requestFocus(focusNodes[x1]);

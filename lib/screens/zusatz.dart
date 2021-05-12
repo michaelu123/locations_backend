@@ -20,8 +20,7 @@ class _ZusatzScreenState extends State<ZusatzScreen>
   @override
   void initState() {
     super.initState();
-    final baseConfigNL = Provider.of<BaseConfig>(context, listen: false);
-    initFelder(context, baseConfigNL, true);
+    initFelder(context, true);
   }
 
   @override
@@ -75,7 +74,8 @@ class _ZusatzScreenState extends State<ZusatzScreen>
                 ),
                 onPressed: () async {
                   final map = await LocationsDB.dataForSameLoc();
-                  locData.dataFor("daten", map);
+                  locData.dataFor(
+                      baseConfig.getDbTableBaseName(), "daten", map);
                   Navigator.of(context).pushNamed(DatenScreen.routeName);
                 },
                 child: const Text(

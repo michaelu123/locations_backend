@@ -74,6 +74,7 @@ class Storage extends ChangeNotifier {
     } else {
       res = await fbClnt.getImage(tableBase, imgName, maxdim, thumbnail);
     }
+    if (res == null) return null;
     if (res[1]) {
       notifyListeners(); // changed from thumbnail to full image
     }
@@ -83,8 +84,6 @@ class Storage extends ChangeNotifier {
   Future<void> copyLoc2Fb(String tableBase, int maxdim) async {
     Map values =
         await locClnt.getValuesWithin(tableBase, "", -90, 90, -180, 180);
-    // Map values = await locClnt.getValuesWithin(
-    //    tableBase, 48.0808, 48.0809, 11.5270, 11.5275);
     final imageList = values["images"];
     for (final imageRow in imageList) {
       String imgName = imageRow[6];
@@ -116,4 +115,11 @@ class Storage extends ChangeNotifier {
     if (useLoc) return locClnt.official(tableBase, val);
     return fbClnt.official(tableBase, val);
   }
+
+  Future<void> deleteLoc(String tableBase, String latRound, String lonRound) {
+    if (useLoc) return locClnt.deleteLoc(tableBase, latRound, lonRound);
+    return fbClnt.deleteLoc(tableBase, latRound, lonRound);
+  }
+
+  deleteImage(String tableBase, String imgPath) {}
 }

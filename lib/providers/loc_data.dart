@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:locations/providers/storage.dart';
 import 'package:locations/utils/db.dart';
 import 'package:locations/providers/markers.dart';
 
@@ -9,6 +10,7 @@ class LocData with ChangeNotifier {
   List locImages = [];
   int imagesIndex = 0;
   List locZusatz = [];
+  String tableBase;
   bool isZusatz = false;
   int zusatzIndex = 0;
   List<List<bool>> checkBoxValuesList;
@@ -17,7 +19,8 @@ class LocData with ChangeNotifier {
   List<String> checkBoxIndex2Name;
   Map<String, int> checkBoxName2Index;
 
-  void dataFor(String table, Map data) {
+  void dataFor(String tableBase, String table, Map data) {
+    this.tableBase = tableBase;
     isZusatz = table == "zusatz";
     locDaten = data["daten"]; // newest is last
     locZusatz = data["zusatz"];
@@ -66,14 +69,16 @@ class LocData with ChangeNotifier {
   }
 
   Future<void> setFeld(Markers markers, String region, String name, String type,
-      Object val, String userName) async {
+      Object val, String userName, Storage strgClnt) async {
     Map res;
+    Map row;
     if (isZusatz) {
       // print("setZusatz $name $type $val $zusatzIndex");
-      final v = locZusatz[zusatzIndex][name];
+      row = locZusatz[zusatzIndex];
+      final v = row[name];
       if (v != val) {
-        int nr = locZusatz[zusatzIndex]["nr"];
-        locZusatz[zusatzIndex][name] = val;
+        int nr = row["nr"];
+        row[name] = val;
         res = await LocationsDB.updateRowDB(
             "zusatz", region, name, val, userName, zusatzIndex,
             nr: nr);
@@ -81,37 +86,32 @@ class LocData with ChangeNotifier {
         //print(
         //    "LocZusatz index=$zusatzIndex nr=$nr $name changed from $v to $val");
         // if (nr != null) locZusatz[zusatzIndex]["nr"] = nr;
-        final created = res["created"];
-        if (created != null) {
-          locZusatz[zusatzIndex]["created"] = created;
-          locZusatz[zusatzIndex]["modified"] = created;
-        }
-        final modified = res["modified"];
-        if (modified != null) {
-          locZusatz[zusatzIndex]["modified"] = modified;
-        }
-        notifyListeners();
       }
     } else {
       // print("setDaten $name $type $val");
-      final v = locDaten[datenIndex][name];
+      row = locDaten[datenIndex];
+      final v = row[name];
       if (v != val) {
-        locDaten[datenIndex][name] = val;
+        row[name] = val;
         res = await LocationsDB.updateRowDB(
             "daten", region, name, val, userName, datenIndex);
         // print("LocDatum $name changed from $v to $val");
-        final created = res["created"];
-        if (created != null) {
-          locDaten[datenIndex]["created"] = created;
-          locDaten[datenIndex]["modified"] = created;
-        }
-        final modified = res["modified"];
-        if (modified != null) {
-          locDaten[datenIndex]["modified"] = modified;
-        }
-        notifyListeners();
       }
     }
+    final created = res["created"];
+    if (created != null) {
+      row["created"] = created;
+      row["modified"] = created;
+    }
+    final modified = res["modified"];
+    if (modified != null) {
+      row["modified"] = modified;
+    }
+    notifyListeners();
+    await strgClnt.post(tableBase, {
+      (isZusatz ? "zusatz" : "daten"): [row]
+    });
+    await LocationsDB.clearNewOrModified();
 
     final coord = Coord();
     coord.lat = LocationsDB.lat;
@@ -120,7 +120,6 @@ class LocData with ChangeNotifier {
         LocationsDB.qualityOfLoc(locDaten[datenIndex], locZusatz, 1);
     coord.hasImage = locImages.length > 0;
     markers.current(coord);
-    // no notify
   }
 
   String getFeldText(String name, String type) {

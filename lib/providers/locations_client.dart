@@ -24,6 +24,8 @@ class LocationsClient {
 
     if (method == "GET") {
       resp = await http.get(Uri.parse(serverUrl + req), headers: headers);
+    } else if (method == "DELETE") {
+      resp = await http.delete(Uri.parse(serverUrl + req), headers: headers);
     } else {
       resp = await http.post(Uri.parse(serverUrl + req),
           headers: headers, body: body);
@@ -159,7 +161,7 @@ class LocationsClient {
   }
 
   Future<Map> postImage(String tableBase, String imgName) async {
-    String req = "/addimage/${tableBase}_images/$imgName";
+    String req = "/addimage/$tableBase/$imgName";
     final headers = {"Content-type": "image/jpeg"};
 
     final imgPath = path.join(extPath, tableBase, "images", imgName);
@@ -179,7 +181,7 @@ class LocationsClient {
       f = File(imgPath);
       if (await f.exists()) return [f, false];
     }
-    final req = "/getimage/${tableBase}_images/$imgName?maxdim=$maxdim";
+    final req = "/getimage/$tableBase/$imgName?maxdim=$maxdim";
     Uint8List res = await reqGetBytesWithRetry(req);
     if (res == null) return null;
     await f.writeAsBytes(res, flush: true);
@@ -204,5 +206,13 @@ class LocationsClient {
     String req = "/official/${tableBase}_daten";
     String body = json.encode(val);
     await reqWithRetry("POST", req, body: body, headers: headers);
+  }
+
+  Future<void> deleteLoc(
+      String tableBase, String latRound, String lonRound) async {
+    final req =
+        "/deleteloc/$tableBase?lat=$latRound&lon=$lonRound&haszusatz=$hasZusatz";
+    Map res = await reqWithRetry("DELETE", req);
+    return res;
   }
 }
