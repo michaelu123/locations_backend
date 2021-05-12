@@ -11,7 +11,6 @@ import 'package:latlong/latlong.dart' as ll;
 import 'package:locations/providers/base_config.dart';
 import 'package:locations/providers/loc_data.dart';
 import 'package:locations/providers/markers.dart';
-import 'package:locations/providers/photos.dart';
 import 'package:locations/providers/settings.dart';
 import 'package:locations/providers/storage.dart';
 import 'package:locations/screens/daten.dart';
@@ -52,7 +51,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
   Settings settingsNL;
   Storage strgClntNL;
   LocData locDataNL;
-
+  String tableBase;
   @override
   void initState() {
     super.initState();
@@ -61,6 +60,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     settingsNL = Provider.of<Settings>(context, listen: false);
     strgClntNL = Provider.of<Storage>(context, listen: false);
     locDataNL = Provider.of<LocData>(context, listen: false);
+    tableBase = baseConfigNL.getDbTableBaseName();
   }
 
   @override
@@ -167,7 +167,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     Future.delayed(const Duration(milliseconds: 500), () async {
       final map = await LocationsDB.dataFor(
           nearestLat, nearestLon, baseConfigNL.stellen());
-      locDataNL.dataFor(baseConfigNL.getDbTableBaseName(), "daten", map);
+      locDataNL.dataFor(tableBase, "daten", map);
       locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
       Navigator.of(context).pushNamed(DatenScreen.routeName);
     });
@@ -177,7 +177,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
   Future<void> onTappedG(double lat, double lon) async {
     Future.delayed(const Duration(milliseconds: 500), () async {
       final map = await LocationsDB.dataFor(lat, lon, baseConfigNL.stellen());
-      locDataNL.dataFor(baseConfigNL.getDbTableBaseName(), "daten", map);
+      locDataNL.dataFor(tableBase, "daten", map);
       locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
       Navigator.of(context).pushNamed(DatenScreen.routeName);
     });
@@ -202,7 +202,6 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
 
   Future<void> deleteLoc(Markers markers) async {
     int stellen = baseConfigNL.stellen();
-    String tableBase = baseConfigNL.getDbTableBaseName();
     String latRound = roundDS(mapLat, stellen);
     String lonRound = roundDS(mapLon, stellen);
     LocationsDB.deleteLoc(latRound, lonRound);
@@ -232,16 +231,13 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     try {
       setState(() => message = "Lösche alte Daten");
       await LocationsDB.deleteOldData();
-      Set newImagePaths = await LocationsDB.getNewImagePaths();
       setState(() => message = "Lösche alte Photos");
-      await Provider.of<Photos>(context, listen: false).deleteAllImagesExcept(
-          baseConfig.getDbTableBaseName(), newImagePaths);
       settings.setConfigValue("center_lat_${baseConfig.base}", mapLat);
       settings.setConfigValue("center_lon_${baseConfig.base}", mapLon);
       setState(() => message = "Lade neue Daten");
       await getDataFromServer(
         strgClnt,
-        baseConfig.getDbTableBaseName(),
+        tableBase,
         settings.getConfigValueS("region"),
         settings.getConfigValueI("delta"),
       );
@@ -257,7 +253,6 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     try {
       setState(() => message = "Neue/geänderte Daten bestimmen");
       final Map newData = await LocationsDB.getNewData();
-      final String tableBase = baseConfigNL.getDbTableBaseName();
       final newImages = newData["images"];
       final newImagesLen = newImages.length;
       int i = 0;
@@ -310,7 +305,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
 
   @override
   Widget build(BuildContext context) {
-    // strgClnt.sayHello(baseConfig.getDbTableBaseName());
+    // strgClnt.sayHello(tableBase);
     final settings = Provider.of<Settings>(context);
     strgClntNL.setClnt(
         settings.getConfigValueS("storage", defVal: "LocationsServer"));
@@ -375,8 +370,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
                   onPressed: () async {
                     final map = await LocationsDB.dataFor(
                         mapLat, mapLon, baseConfigNL.stellen());
-                    locDataNL.dataFor(
-                        baseConfigNL.getDbTableBaseName(), "daten", map);
+                    locDataNL.dataFor(tableBase, "daten", map);
                     locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
                     Navigator.of(context).pushNamed(DatenScreen.routeName);
                   },

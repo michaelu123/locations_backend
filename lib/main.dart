@@ -12,7 +12,6 @@ import 'package:locations/utils/syntax.dart';
 import 'package:locations/utils/utils.dart';
 import 'package:locations/providers/loc_data.dart';
 import 'package:locations/providers/markers.dart';
-import 'package:locations/providers/photos.dart';
 import 'package:locations/providers/settings.dart';
 import 'package:locations/screens/bilder.dart';
 import 'package:locations/screens/daten.dart';
@@ -45,9 +44,6 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (BuildContext context) => Markers(),
-        ),
-        ChangeNotifierProvider(
-          create: (BuildContext context) => Photos(),
         ),
         ChangeNotifierProvider(
           create: (BuildContext context) => Storage(),

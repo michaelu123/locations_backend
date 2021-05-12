@@ -25,6 +25,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
   LocData locDataNL;
   Storage strgClntNL;
   Settings settingsNL;
+  String tableBase;
 
   @override
   void initState() {
@@ -33,6 +34,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     locDataNL = Provider.of<LocData>(context, listen: false);
     strgClntNL = Provider.of<Storage>(context, listen: false);
     settingsNL = Provider.of<Settings>(context, listen: false);
+    tableBase = baseConfigNL.getDbTableBaseName();
     initFelder(context, false);
   }
 
@@ -57,12 +59,11 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     prevDaten = null;
     final map = await LocationsDB.dataFor(
         LocationsDB.lat, LocationsDB.lon, baseConfigNL.stellen());
-    locDataNL.dataFor(baseConfigNL.getDbTableBaseName(), "daten", map);
+    locDataNL.dataFor(tableBase, "daten", map);
     locDataNL.fillCheckboxValues(baseConfigNL.getDatenFelder());
   }
 
   void offiziell() async {
-    final String tableBase = baseConfigNL.getDbTableBaseName();
     Map<String, Object> val = locDataNL.getDaten();
     val["creator"] = "STAMM";
     await strgClntNL.official(tableBase, val);
@@ -103,8 +104,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                   ),
                   onPressed: () async {
                     final map = await LocationsDB.dataForSameLoc();
-                    locDataNL.dataFor(
-                        baseConfigNL.getDbTableBaseName(), "zusatz", map);
+                    locDataNL.dataFor(tableBase, "zusatz", map);
                     await Navigator.of(context)
                         .pushNamed(ZusatzScreen.routeName);
                     // without the next statement, after pressing back button

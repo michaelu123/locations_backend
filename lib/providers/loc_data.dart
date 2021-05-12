@@ -153,8 +153,7 @@ class LocData with ChangeNotifier {
 
   void addDaten() {
     locDaten = [Map<String, Object>()];
-    List prev = LocationsDB.storeDaten(locDaten); // TODO
-    print("prev $prev");
+    LocationsDB.storeDaten(locDaten);
     datenIndex = 0;
     notifyListeners();
   }
@@ -241,22 +240,6 @@ class LocData with ChangeNotifier {
 
   bool isEmptyImages() {
     return (locImages.length) == 0;
-  }
-
-  int addImage(Map map, Markers markers) {
-    locImages.add(map);
-    imagesIndex = locImages.length - 1;
-    notifyListeners();
-
-    final coord = Coord();
-    coord.lat = LocationsDB.lat;
-    coord.lon = LocationsDB.lon;
-    coord.quality =
-        LocationsDB.qualityOfLoc(locDaten[datenIndex], locZusatz, 1);
-    coord.hasImage = locImages.length > 0;
-    markers.current(coord);
-
-    return imagesIndex;
   }
 
   String deleteImage(Markers markers) {
