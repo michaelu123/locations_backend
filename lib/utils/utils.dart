@@ -45,3 +45,12 @@ Future<void> initExtPath() async {
 String getExtPath() {
   return _extPath;
 }
+
+Future<void> deleteAllImages(String tableBase) async {
+  final extPath = getExtPath();
+  String imgDirPath = path.join(extPath, tableBase, "images");
+  Stream<FileSystemEntity> images = Directory(imgDirPath).list();
+  images.forEach((image) async {
+    await image.delete();
+  });
+}

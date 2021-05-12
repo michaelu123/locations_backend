@@ -123,29 +123,29 @@ class LocationsClient {
     throw "Keine Tabelle $table auf dem LocationsServer gefunden";
   }
 
-  Future<void> post(String tableBase, Map values) async {
+  Future<Map> post(String tableBase, Map values) async {
     // values is a Map {table: [{colname:colvalue},...]}
+    Map res;
     Map<String, String> headers = {"Content-type": "application/json"};
     for (final table in values.keys) {
       String req = "/add/${tableBase}_$table";
       List vals = values[table];
-      if (vals.length == 0) continue;
-      if (table == "zusatz") {
-        for (Map val in vals) {
-          val["nr"] = null;
-        }
-      }
-
       int vl = vals.length;
+      if (vl == 0) continue;
       int start = 0;
       while (start < vl) {
         int end = min(start + 100, vl);
         List sub = vals.sublist(start, end);
         start = end;
         String body = json.encode(sub);
-        await reqWithRetry("POST", req, body: body, headers: headers);
+        res = await reqWithRetry("POST", req, body: body, headers: headers);
+        print("res $res");
+      }
+      if (table == "zusatz" && res != null && vals.length == 1) {
+        vals[0]["nr"] = res["rowid"];
       }
     }
+    return res;
   }
 
   Future<Map> getValuesWithin(String tableBase, String region, double minlat,

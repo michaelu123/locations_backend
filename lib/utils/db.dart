@@ -25,7 +25,6 @@ class LocationsDB {
   static List<Statement> statements;
   static Map<String, Map<String, List<Map<String, Object>>>> locDataDB;
   static DateFormat dateFormatterDB = DateFormat('yyyy.MM.dd HH:mm:ss');
-  static int nrInc = 0;
 
   static Future<void> setBaseDB(BaseConfig baseConfig) async {
     if (dbName == baseConfig.getDbName()) return;
@@ -40,8 +39,8 @@ class LocationsDB {
     felder = baseConfig.getDbImagesFelder();
     colNames["images"] = felder.map((feld) => feld["name"] as String).toList();
     lat = lon = null;
-    statements = parseProgram(baseConfig.getProgram());
-    // statements = parseProgram("if _count > 1 then return 2 end; return -1");
+    //statements = parseProgram(baseConfig.getProgram());
+    statements = parseProgram("if _zcount > 1 then return 2 end; return 0");
 
     locDataDB = {"daten": {}, "zusatz": {}, "images": {}};
   }
@@ -138,8 +137,7 @@ class LocationsDB {
   }
 
   static Future<Map> updateRowDB(String table, String region, String name,
-      Object val, String userName, int index,
-      {int nr}) async {
+      Object val, String userName, int index) async {
     final now = dateFormatterDB.format(DateTime.now());
     List l = getLocData(table, latRound, lonRound);
     Map<String, Object> m = l[index];
@@ -153,9 +151,6 @@ class LocationsDB {
       m["lon_round"] = lonRound;
       m["creator"] = userName;
       m[name] = val;
-      if (table == "zusatz") {
-        m["nr"] = nrInc++;
-      }
       return {"created": now};
     }
     return {"modified": now};
@@ -168,6 +163,7 @@ class LocationsDB {
 
   static int qualityOfLoc(Map daten, List zusatz, int count) {
     daten["_count"] = count;
+    daten["_zcount"] = zusatz.length;
     int r = evalProgram(statements, daten, zusatz);
     if (r == null)
       r = 0;
@@ -284,8 +280,6 @@ class LocationsDB {
   static Future<void> fillWithDBValues(Map values) async {
     Map newData = await getNewData(); // save new data
     for (String table in values.keys) {
-      bool isZusatz = table == "zusatz";
-
       List rows = values[table];
       if (rows == null) continue;
       final cnames = colNames[table];
@@ -297,10 +291,6 @@ class LocationsDB {
           data[cnames[i]] = row[i];
         }
         data["new_or_modified"] = null;
-        if (isZusatz) {
-          int nr = data["nr"];
-          if (nr >= nrInc) nrInc = nr + 1;
-        }
         insert(table, data);
       }
       Map<String, List<Map<String, Object>>> entries = locDataDB[table];
@@ -317,7 +307,6 @@ class LocationsDB {
       // restore new data
       rows = newData[table];
       for (final map in rows) {
-        // if (isZusatz) map['nr'] = nrInc++;
         insert(table, map);
       }
     }
@@ -348,5 +337,10 @@ class LocationsDB {
     List<Map<String, Object>> prev = locDataDB["daten"][k];
     locDataDB["daten"][k] = locDaten.cast<Map<String, Object>>();
     return prev;
+  }
+
+  static void storeZusatz(List locZusatz) {
+    String k = keyFor(latRound, lonRound);
+    locDataDB["zusatz"][k] = locZusatz.cast<Map<String, Object>>();
   }
 }

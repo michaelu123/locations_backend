@@ -169,7 +169,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
               IconButton(
                 iconSize: 40,
                 icon: const Icon(Icons.add),
-                onPressed: locData.isEmpty() ? locData.addDaten : null,
+                onPressed: locData.isEmptyDaten() ? locData.addDaten : null,
               ),
               IconButton(
                 iconSize: 40,
@@ -191,7 +191,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                 Expanded(child: Text("Alle Checkboxen setzen/löschen"))
               ],
             ),
-          if (locData.isEmpty())
+          if (locData.isEmptyDaten())
             const Center(
               child: const Text(
                 "Noch keine Daten eingetragen",
@@ -202,7 +202,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                 ),
               ),
             ),
-          if (!locData.isEmpty())
+          if (!locData.isEmptyDaten())
             Expanded(
               child: settingsNL.getConfigValueS("username", defVal: "").isEmpty
                   ? const Center(

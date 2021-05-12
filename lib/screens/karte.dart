@@ -232,6 +232,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
       setState(() => message = "Lösche alte Daten");
       await LocationsDB.deleteOldData();
       setState(() => message = "Lösche alte Photos");
+      deleteAllImages(tableBase);
       settings.setConfigValue("center_lat_${baseConfig.base}", mapLat);
       settings.setConfigValue("center_lon_${baseConfig.base}", mapLon);
       setState(() => message = "Lade neue Daten");
@@ -243,31 +244,6 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
       );
       setState(() => message = "Lade MapMarker");
       await markersNL.readMarkers(baseConfig.stellen(), useGoogle, onTappedG);
-    } finally {
-      setState(() => message = null);
-    }
-  }
-
-  Future<void> speichern() async {
-    if (message != null) return;
-    try {
-      setState(() => message = "Neue/geänderte Daten bestimmen");
-      final Map newData = await LocationsDB.getNewData();
-      final newImages = newData["images"];
-      final newImagesLen = newImages.length;
-      int i = 0;
-      for (final img in newImages) {
-        final String imagePath = img["image_path"];
-        i += 1;
-        setState(() => message = "Bild $i von $newImagesLen");
-        final Map map = await strgClntNL.postImage(tableBase, imagePath);
-        final String url = map["url"];
-        await LocationsDB.updateImagesDB(imagePath, "image_url", url);
-        img["image_url"] = url;
-      }
-      setState(() => message = "Neue/geänderte Daten speichern");
-      await strgClntNL.post(tableBase, newData);
-      await LocationsDB.clearNewOrModified();
     } finally {
       setState(() => message = null);
     }
@@ -389,29 +365,6 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
                     'Laden',
                   ),
                 ),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.amber,
-                  ),
-                  onPressed: () async {
-                    await speichern();
-                  },
-                  child: const Text(
-                    'Speichern',
-                  ),
-                ),
-                // TextButton(
-                //   style: TextButton.styleFrom(
-                //     backgroundColor: Colors.amber,
-                //   ),
-                //   onPressed: () async {
-                //     final locationData = await Location().getLocation();
-                //     move(locationData.latitude, locationData.longitude);
-                //   },
-                //   child: const Text(
-                //     'GPS Fix',
-                //   ),
-                // ),
                 TextButton(
                   style: TextButton.styleFrom(
                     backgroundColor: Colors.amber,

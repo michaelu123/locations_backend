@@ -47,7 +47,8 @@ class _ZusatzScreenState extends State<ZusatzScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
-            onPressed: locData.isEmpty() ? null : () => deleteZusatz(locData),
+            onPressed:
+                locData.isEmptyZusatz() ? null : () => deleteZusatz(locData),
           ),
         ],
       ),
@@ -107,7 +108,7 @@ class _ZusatzScreenState extends State<ZusatzScreen>
               IconButton(
                 iconSize: 40,
                 icon: const Icon(Icons.add),
-                onPressed: baseConfig.hasZusatz() && !locData.isEmpty()
+                onPressed: baseConfig.hasZusatz() && !locData.isEmptyDaten()
                     ? locData.addZusatz
                     : null,
               ),
@@ -119,7 +120,7 @@ class _ZusatzScreenState extends State<ZusatzScreen>
               ),
             ],
           ),
-          if (locData.isEmpty())
+          if (locData.isEmptyDaten())
             const Center(
               child: const Text(
                 "Noch keine Daten eingetragen",
@@ -130,7 +131,18 @@ class _ZusatzScreenState extends State<ZusatzScreen>
                 ),
               ),
             ),
-          if (!locData.isEmpty())
+          if (locData.isEmptyZusatz())
+            const Center(
+              child: const Text(
+                "Noch keine Zusatzdaten eingetragen",
+                style: const TextStyle(
+                  backgroundColor: Colors.white,
+                  color: Colors.black,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          if (!locData.isEmptyZusatz())
             Expanded(
               child: GestureDetector(
                 onHorizontalDragEnd: (details) {

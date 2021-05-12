@@ -77,15 +77,9 @@ class LocData with ChangeNotifier {
       row = locZusatz[zusatzIndex];
       final v = row[name];
       if (v != val) {
-        int nr = row["nr"];
         row[name] = val;
         res = await LocationsDB.updateRowDB(
-            "zusatz", region, name, val, userName, zusatzIndex,
-            nr: nr);
-        // nr = res["nr"]; // nr does not change on backend
-        //print(
-        //    "LocZusatz index=$zusatzIndex nr=$nr $name changed from $v to $val");
-        // if (nr != null) locZusatz[zusatzIndex]["nr"] = nr;
+            "zusatz", region, name, val, userName, zusatzIndex);
       }
     } else {
       // print("setDaten $name $type $val");
@@ -98,14 +92,16 @@ class LocData with ChangeNotifier {
         // print("LocDatum $name changed from $v to $val");
       }
     }
-    final created = res["created"];
-    if (created != null) {
-      row["created"] = created;
-      row["modified"] = created;
-    }
-    final modified = res["modified"];
-    if (modified != null) {
-      row["modified"] = modified;
+    if (res != null) {
+      final created = res["created"];
+      if (created != null) {
+        row["created"] = created;
+        row["modified"] = created;
+      }
+      final modified = res["modified"];
+      if (modified != null) {
+        row["modified"] = modified;
+      }
     }
     notifyListeners();
     await strgClnt.post(tableBase, {
@@ -129,6 +125,7 @@ class LocData with ChangeNotifier {
       if (zusatzIndex >= locZusatz.length) zusatzIndex = 0;
       t = locZusatz[zusatzIndex][name];
     } else {
+      if (locDaten.length == 0) return "";
       if (datenIndex >= locDaten.length) datenIndex = 0;
       t = locDaten[datenIndex][name];
     }
@@ -182,12 +179,17 @@ class LocData with ChangeNotifier {
     }
   }
 
-  bool isEmpty() {
-    return (isZusatz ? locZusatz.length : locDaten.length) == 0;
+  bool isEmptyDaten() {
+    return locDaten.length == 0;
+  }
+
+  bool isEmptyZusatz() {
+    return locZusatz.length == 0;
   }
 
   void addZusatz() {
     locZusatz.add(Map<String, Object>());
+    LocationsDB.storeZusatz(locZusatz);
     zusatzIndex = locZusatz.length - 1;
     notifyListeners();
   }
@@ -240,6 +242,22 @@ class LocData with ChangeNotifier {
 
   bool isEmptyImages() {
     return (locImages.length) == 0;
+  }
+
+  int addImage(Map map, Markers markers) {
+    locImages.add(map);
+    imagesIndex = locImages.length - 1;
+    notifyListeners();
+
+    final coord = Coord();
+    coord.lat = LocationsDB.lat;
+    coord.lon = LocationsDB.lon;
+    coord.quality =
+        LocationsDB.qualityOfLoc(locDaten[datenIndex], locZusatz, 1);
+    coord.hasImage = locImages.length > 0;
+    markers.current(coord);
+
+    return imagesIndex;
   }
 
   String deleteImage(Markers markers) {

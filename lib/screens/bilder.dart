@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:filepicker_windows/filepicker_windows.dart';
 import 'package:locations/providers/base_config.dart';
 import 'package:locations/providers/loc_data.dart';
 import 'package:locations/providers/markers.dart';
@@ -15,6 +16,8 @@ import 'package:locations/utils/felder.dart';
 import 'package:locations/utils/utils.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
+import 'package:intl/intl.dart';
+import 'package:path/path.dart' as path;
 
 /// IndexModel is needed only for the left and right arrows.
 /// If we trigger [LocData] notification when moving from
@@ -53,6 +56,8 @@ class _ImagesScreenState extends State<ImagesScreen>
   Settings settingsNL;
   IndexModel indexModelNL;
   String tableBase;
+  static DateFormat dateFormatterName = DateFormat('yyyyMMdd_HHmmss');
+  static DateFormat dateFormatterDB = DateFormat('yyyy.MM.dd HH:mm:ss');
 
   @override
   void initState() {
@@ -96,6 +101,61 @@ class _ImagesScreenState extends State<ImagesScreen>
     String bemerkung = locData.getImgBemerkung(index);
     File img = await getImageFile(imgPath, imgUrl);
     return Tuple2(img, bemerkung);
+  }
+
+  Future<int> addPhoto(LocData locData, String userName, String region,
+      String tableBase, Markers markers) async {
+    final picker = OpenFilePicker()
+      ..filterSpecification = {
+        'JPEG image': '*.jpg;*.jpeg',
+      };
+    File result = picker.getFile();
+    print(result);
+    return await saveImage(
+        result, tableBase, userName, region, locData, markers);
+  }
+
+  Future<int> saveImage(File imf, String tableBase, String userName,
+      String region, LocData locData, Markers markers) async {
+    final lat = LocationsDB.lat;
+    final lon = LocationsDB.lon;
+    final latRound = LocationsDB.latRound;
+    final lonRound = LocationsDB.lonRound;
+
+    final extPath = getExtPath();
+    final now = DateTime.now();
+    final dbNow = dateFormatterDB.format(now);
+    final nameNow = dateFormatterName.format(now);
+    final imgName = "${latRound}_${lonRound}_$nameNow.jpg";
+    final imgDirPath = path.join(extPath, tableBase, "images");
+    Directory(imgDirPath).create(recursive: true);
+    final imgPath = path.join(imgDirPath, imgName);
+    await imf.copy(imgPath);
+
+    final Map res = await strgClntNL.postImage(tableBase, imgName);
+    final String url = res["url"];
+
+    final map = {
+      "creator": userName,
+      "created": dbNow,
+      "region": region,
+      "lat": lat,
+      "lon": lon,
+      "lat_round": latRound,
+      "lon_round": lonRound,
+      "image_path": imgName,
+      "image_url": url,
+      "bemerkung": null,
+      "new_or_modified": 1,
+    };
+    await LocationsDB.insert("images", map);
+    await strgClntNL.post(tableBase, {
+      "images": [map]
+    });
+
+    await LocationsDB.clearNewOrModified();
+    int x = locData.addImage(map, markers);
+    return x;
   }
 
   @override
@@ -193,23 +253,22 @@ class _ImagesScreenState extends State<ImagesScreen>
                   );
                 },
               ),
-              // IconButton(
-              //   icon: const Icon(Icons.add_a_photo),
-              //   onPressed: () async {
-              //     int x = await photosNL.takePicture(
-              //       locData,
-              //       settingsNL.getConfigValueI("maxdim"),
-              //       settingsNL.getConfigValueS("username"),
-              //       settingsNL.getConfigValueS("region"),
-              //       tableBase,
-              //       markersNL,
-              //     );
-              //     if (x != null) {
-              //       locData.setImagesIndex(x);
-              //       imageAdded = x;
-              //     }
-              //   },
-              // ),
+              IconButton(
+                icon: const Icon(Icons.add_a_photo),
+                onPressed: () async {
+                  int x = await addPhoto(
+                    locData,
+                    settingsNL.getConfigValueS("username"),
+                    settingsNL.getConfigValueS("region"),
+                    tableBase,
+                    markersNL,
+                  );
+                  if (x != null) {
+                    locData.setImagesIndex(x);
+                    imageAdded = x;
+                  }
+                },
+              ),
               Consumer<IndexModel>(
                 builder: (ctx, idx, _) {
                   return IconButton(
@@ -231,16 +290,25 @@ class _ImagesScreenState extends State<ImagesScreen>
               ),
             ],
           ),
+          if (locData.isEmptyDaten())
+            const Center(
+              child: const Text(
+                "Noch keine Daten eingetragen",
+                style: const TextStyle(
+                  backgroundColor: Colors.white,
+                  color: Colors.black,
+                  fontSize: 20,
+                ),
+              ),
+            ),
           if (locData.isEmptyImages())
-            Expanded(
-              child: Center(
-                child: const Text(
-                  "Noch keine Bilder aufgenommen",
-                  style: TextStyle(
-                    backgroundColor: Colors.white,
-                    color: Colors.black,
-                    fontSize: 20,
-                  ),
+            Center(
+              child: const Text(
+                "Noch keine Bilder aufgenommen",
+                style: TextStyle(
+                  backgroundColor: Colors.white,
+                  color: Colors.black,
+                  fontSize: 20,
                 ),
               ),
             ),
@@ -290,7 +358,7 @@ class _ImagesScreenState extends State<ImagesScreen>
                             ),
                           );
                         }
-                        if (snap.data == null) {
+                        if (snap.data == null || snap.data.item1 == null) {
                           return Center(
                               child: const Text(
                             "Bild nicht gefunden",
