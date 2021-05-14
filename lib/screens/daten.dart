@@ -67,6 +67,8 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     Map<String, Object> val = locDataNL.getDaten();
     val["creator"] = "STAMM";
     await strgClntNL.official(tableBase, val);
+    val.remove("_united");
+    prevDaten = null;
     setState(() {});
   }
 
@@ -76,176 +78,189 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     final felder = baseConfig.getDatenFelder();
     final locData = Provider.of<LocData>(context, listen: true);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(baseConfig.getName() + "/Daten"),
-      ),
-      body: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                ),
-                onPressed: () {
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                      KartenScreen.routeName, (_) => false);
-                },
-                child: const Text(
-                  'Karte',
-                ),
-              ),
-              if (baseConfig.hasZusatz())
-                TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.amber,
+    return WillPopScope(
+      onWillPop: () async {
+        return prevDaten == null;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(baseConfig.getName() + "/Daten"),
+        ),
+        body: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                if (prevDaten == null)
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                          KartenScreen.routeName, (_) => false);
+                    },
+                    child: const Text(
+                      'Karte',
+                    ),
                   ),
-                  onPressed: () async {
-                    final map = await LocationsDB.dataForSameLoc();
-                    locDataNL.dataFor(tableBase, "zusatz", map);
-                    await Navigator.of(context)
-                        .pushNamed(ZusatzScreen.routeName);
-                    // without the next statement, after pressing back button
-                    // from zusatz the datenscreen shows wrong data
-                    locDataNL.setIsZusatz(false);
-                  },
-                  child: const Text(
-                    'Zusatzdaten',
+                if (prevDaten == null && baseConfig.hasZusatz())
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                    ),
+                    onPressed: () async {
+                      final map = await LocationsDB.dataForSameLoc();
+                      locDataNL.dataFor(tableBase, "zusatz", map);
+                      await Navigator.of(context)
+                          .pushNamed(ZusatzScreen.routeName);
+                      // without the next statement, after pressing back button
+                      // from zusatz the datenscreen shows wrong data
+                      locDataNL.setIsZusatz(false);
+                    },
+                    child: const Text(
+                      'Zusatzdaten',
+                    ),
                   ),
-                ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                ),
-                onPressed: () {
-                  Navigator.of(context).pushNamed(ImagesScreen.routeName);
-                },
-                child: const Text(
-                  'Bilder',
-                ),
-              ),
-              if (locData.moreThanOne())
-                TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.lightGreen[200],
+                if (prevDaten == null)
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(ImagesScreen.routeName);
+                    },
+                    child: const Text(
+                      'Bilder',
+                    ),
                   ),
-                  onPressed: () => prevDaten = locData.vereinigen(),
-                  child: const Text(
-                    'Vereinigen',
+                if (locData.moreThanOne())
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.lightGreen[200],
+                    ),
+                    onPressed: () => prevDaten = locData.vereinigen(),
+                    child: const Text(
+                      'Vereinigen',
+                    ),
                   ),
-                ),
-              if (prevDaten != null)
-                TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.lightGreen[200],
+                if (prevDaten != null)
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.lightGreen[200],
+                    ),
+                    onPressed: nochMal,
+                    child: const Text(
+                      'Nochmal',
+                    ),
                   ),
-                  onPressed: nochMal,
-                  child: const Text(
-                    'Nochmal',
+                if (!locData.moreThanOne() &&
+                    (prevDaten != null || locData.creator() != "STAMM"))
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.lightGreen[200],
+                    ),
+                    onPressed: offiziell,
+                    child: const Text(
+                      'Offiziell',
+                    ),
                   ),
-                ),
-              if (!locData.moreThanOne() && locData.creator() != "STAMM")
-                TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.lightGreen[200],
-                  ),
-                  onPressed: offiziell,
-                  child: const Text(
-                    'Offiziell',
-                  ),
-                ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                iconSize: 40,
-                icon: const Icon(Icons.arrow_back),
-                onPressed: locData.canDecDaten() ? locData.decIndexDaten : null,
-              ),
-              IconButton(
-                iconSize: 40,
-                icon: const Icon(Icons.add),
-                onPressed: locData.isEmptyDaten() ? locData.addDaten : null,
-              ),
-              IconButton(
-                iconSize: 40,
-                icon: const Icon(Icons.arrow_forward),
-                onPressed: locData.canIncDaten() ? locData.incIndexDaten : null,
-              ),
-            ],
-          ),
-          if (locData.moreThanOne())
+              ],
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SizedBox(
-                  width: 60,
-                  child: Checkbox(
-                      value: locData.getAllBoxesSetValue(),
-                      onChanged: (b) => allBoxesChanged(b)),
+                IconButton(
+                  iconSize: 40,
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed:
+                      locData.canDecDaten() ? locData.decIndexDaten : null,
                 ),
-                Expanded(child: Text("Alle Checkboxen setzen/löschen"))
+                IconButton(
+                  iconSize: 40,
+                  icon: const Icon(Icons.add),
+                  onPressed: locData.isEmptyDaten() ? locData.addDaten : null,
+                ),
+                IconButton(
+                  iconSize: 40,
+                  icon: const Icon(Icons.arrow_forward),
+                  onPressed:
+                      locData.canIncDaten() ? locData.incIndexDaten : null,
+                ),
               ],
             ),
-          if (locData.isEmptyDaten())
-            const Center(
-              child: const Text(
-                "Noch keine Daten eingetragen",
-                style: const TextStyle(
-                  backgroundColor: Colors.white,
-                  color: Colors.black,
-                  fontSize: 20,
+            if (locData.moreThanOne())
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SizedBox(
+                    width: 60,
+                    child: Checkbox(
+                        value: locData.getAllBoxesSetValue(),
+                        onChanged: (b) => allBoxesChanged(b)),
+                  ),
+                  Expanded(child: Text("Alle Checkboxen setzen/löschen"))
+                ],
+              ),
+            if (locData.isEmptyDaten())
+              const Center(
+                child: const Text(
+                  "Noch keine Daten eingetragen",
+                  style: const TextStyle(
+                    backgroundColor: Colors.white,
+                    color: Colors.black,
+                    fontSize: 20,
+                  ),
                 ),
               ),
-            ),
-          if (!locData.isEmptyDaten())
-            Expanded(
-              child: settingsNL.getConfigValueS("username", defVal: "").isEmpty
-                  ? const Center(
-                      child: Text(
-                        "Bitte erst einen Benutzer/Spitznamen eingeben",
-                        style: TextStyle(
-                          backgroundColor: Colors.white,
-                          color: Colors.black,
-                          fontSize: 20,
+            if (!locData.isEmptyDaten())
+              Expanded(
+                child: settingsNL
+                        .getConfigValueS("username", defVal: "")
+                        .isEmpty
+                    ? const Center(
+                        child: Text(
+                          "Bitte erst einen Benutzer/Spitznamen eingeben",
+                          style: TextStyle(
+                            backgroundColor: Colors.white,
+                            color: Colors.black,
+                            fontSize: 20,
+                          ),
                         ),
+                      )
+                    : Consumer<LocData>(
+                        builder: (ctx, locDaten, _) {
+                          setFelder(locDaten, baseConfig, false);
+                          return ListView.builder(
+                            itemCount: felder.length,
+                            itemBuilder: (ctx, index) {
+                              return Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  if (locData.moreThanOne())
+                                    SizedBox(
+                                      width: 60,
+                                      child: Checkbox(
+                                          value: locData.getCboxValue(index),
+                                          onChanged: (b) =>
+                                              cboxChanged(index, b)),
+                                    ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(10),
+                                      child: textFields[index],
+                                    ),
+                                  )
+                                ],
+                              );
+                            },
+                          );
+                        },
                       ),
-                    )
-                  : Consumer<LocData>(
-                      builder: (ctx, locDaten, _) {
-                        setFelder(locDaten, baseConfig, false);
-                        return ListView.builder(
-                          itemCount: felder.length,
-                          itemBuilder: (ctx, index) {
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                if (locData.moreThanOne())
-                                  SizedBox(
-                                    width: 60,
-                                    child: Checkbox(
-                                        value: locData.getCboxValue(index),
-                                        onChanged: (b) =>
-                                            cboxChanged(index, b)),
-                                  ),
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: textFields[index],
-                                  ),
-                                )
-                              ],
-                            );
-                          },
-                        );
-                      },
-                    ),
-            ),
-        ],
+              ),
+          ],
+        ),
       ),
     );
   }

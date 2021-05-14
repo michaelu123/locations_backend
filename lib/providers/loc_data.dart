@@ -104,10 +104,12 @@ class LocData with ChangeNotifier {
       }
     }
     notifyListeners();
-    await strgClnt.post(tableBase, {
-      (isZusatz ? "zusatz" : "daten"): [row]
-    });
-    await LocationsDB.clearNewOrModified();
+    if (row["_united"] == null) {
+      await strgClnt.post(tableBase, {
+        (isZusatz ? "zusatz" : "daten"): [row]
+      });
+      await LocationsDB.clearNewOrModified();
+    }
 
     final coord = Coord();
     coord.lat = LocationsDB.lat;
@@ -372,6 +374,7 @@ class LocData with ChangeNotifier {
       }
     }
     res["new_or_modified"] = 1;
+    res["_united"] = true;
     locDaten = [res];
     List prev = LocationsDB.storeDaten(locDaten);
     datenIndex = 0;

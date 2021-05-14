@@ -39,8 +39,8 @@ class LocationsDB {
     felder = baseConfig.getDbImagesFelder();
     colNames["images"] = felder.map((feld) => feld["name"] as String).toList();
     lat = lon = null;
-    //statements = parseProgram(baseConfig.getProgram());
-    statements = parseProgram("if _zcount > 1 then return 2 end; return 0");
+    statements = parseProgram(baseConfig.getProgram());
+    //statements = parseProgram("if _dcount > 1 then return 2 end; return 0");
 
     locDataDB = {"daten": {}, "zusatz": {}, "images": {}};
   }
@@ -162,7 +162,7 @@ class LocationsDB {
   }
 
   static int qualityOfLoc(Map daten, List zusatz, int count) {
-    daten["_count"] = count;
+    daten["_dcount"] = count;
     daten["_zcount"] = zusatz.length;
     int r = evalProgram(statements, daten, zusatz);
     if (r == null)

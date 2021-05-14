@@ -337,7 +337,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
         body: Column(
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 TextButton(
                   style: TextButton.styleFrom(
