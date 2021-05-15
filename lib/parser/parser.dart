@@ -170,6 +170,10 @@ class LocParserDefinition extends LocGrammarDefinition {
 
 String parserErrorMessage;
 
+String getErrorMessage() {
+  return parserErrorMessage;
+}
+
 List<Statement> parseProgram(String program) {
   final parser = LocParserDefinition().build();
   final v = parser.parse(program);

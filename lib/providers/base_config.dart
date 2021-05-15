@@ -318,7 +318,7 @@ class BaseConfig extends ChangeNotifier {
     final prog = baseJS["program"];
     if (prog != null) {
       if (prog is List) {
-        p = prog.join('');
+        p = prog.join('\n');
       } else if (prog is String) {
         p = prog;
       }

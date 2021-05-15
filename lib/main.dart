@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:locations/providers/base_config.dart';
 import 'package:locations/providers/storage.dart';
+import 'package:locations/screens/program.dart';
 //import 'package:locations/screens/account.dart';
 import 'package:locations/utils/db.dart';
 import 'package:locations/utils/syntax.dart';
@@ -116,6 +117,7 @@ class MyApp extends StatelessWidget {
               ZusatzScreen.routeName: (ctx) => ZusatzScreen(),
               KartenScreen.routeName: (ctx) => KartenScreen(),
               PhotoScreen.routeName: (ctx) => PhotoScreen(),
+              ProgramSelector.routeName: (ctx) => ProgramSelector(),
             },
           );
         },
