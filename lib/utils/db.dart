@@ -7,8 +7,7 @@ class Coord {
   double lat;
   double lon;
   int quality;
-  bool hasImage;
-  int count;
+  int dcount, icount;
 }
 
 class LocationsDB {
@@ -40,9 +39,11 @@ class LocationsDB {
     colNames["images"] = felder.map((feld) => feld["name"] as String).toList();
     lat = lon = null;
     statements = parseProgram(baseConfig.getProgram());
-    //statements = parseProgram("if _dcount > 1 then return 2 end; return 0");
-
     locDataDB = {"daten": {}, "zusatz": {}, "images": {}};
+  }
+
+  static void setProgram(List<Statement> stmts) {
+    statements = stmts;
   }
 
   static String keyFor(String latRound, String lonRound) {
@@ -161,9 +162,10 @@ class LocationsDB {
     assert(false);
   }
 
-  static int qualityOfLoc(Map daten, List zusatz, int count) {
-    daten["_dcount"] = count;
+  static int qualityOfLoc(Map daten, List zusatz, int dcount, int icount) {
+    daten["_dcount"] = dcount;
     daten["_zcount"] = zusatz.length;
+    daten["_icount"] = icount;
     int r = evalProgram(statements, daten, zusatz);
     if (r == null)
       r = 0;
@@ -182,10 +184,10 @@ class LocationsDB {
       final coord = Coord();
       coord.lat = res["lat"];
       coord.lon = res["lon"];
-      coord.hasImage = false;
       final key = keyOf(res);
       final prev = map[key];
-      coord.count = prev != null ? prev.count + 1 : 1;
+      coord.dcount = prev != null ? prev.dcount + 1 : 1;
+      coord.icount = 0;
       // here, newer records replace older ones
       map[key] = coord;
       daten[key] = res;
@@ -205,8 +207,8 @@ class LocationsDB {
           coord = Coord();
           coord.lat = res["lat"];
           coord.lon = res["lon"];
-          coord.hasImage = false;
-          coord.count = 0;
+          coord.dcount = 0;
+          coord.icount = 0;
           map[key] = coord;
         }
       }
@@ -219,10 +221,12 @@ class LocationsDB {
         coord = Coord();
         coord.lat = res["lat"];
         coord.lon = res["lon"];
-        coord.count = 0;
+        coord.dcount = 0;
+        coord.icount = 1;
         map[key] = coord;
+      } else {
+        coord.icount += 1;
       }
-      coord.hasImage = true;
     }
 
     map.forEach((key, coord) {
@@ -234,7 +238,7 @@ class LocationsDB {
       } else {
         l = [];
       }
-      coord.quality = qualityOfLoc(m, l, coord.count);
+      coord.quality = qualityOfLoc(m, l, coord.dcount, coord.icount);
       // coord.quality = coord.count > 2 ? 2 : coord.count;
     });
     return map.values.toList();

@@ -14,7 +14,7 @@ import 'package:locations/providers/markers.dart';
 import 'package:locations/providers/settings.dart';
 import 'package:locations/providers/storage.dart';
 import 'package:locations/screens/daten.dart';
-import 'package:locations/screens/program.dart';
+import 'package:locations/screens/markercode.dart';
 import 'package:locations/screens/splash_screen.dart';
 import 'package:locations/utils/db.dart';
 import 'package:locations/utils/felder.dart';
@@ -382,10 +382,10 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
                     backgroundColor: Colors.amber,
                   ),
                   onPressed: () async {
-                    Navigator.of(context).pushNamed(ProgramSelector.routeName);
+                    Navigator.of(context).pushNamed(MarkerCodeScreen.routeName);
                   },
                   child: const Text(
-                    'Programm',
+                    'Marker-Code',
                   ),
                 ),
               ],

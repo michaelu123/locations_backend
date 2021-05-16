@@ -362,4 +362,13 @@ class BaseConfig extends ChangeNotifier {
     }
     return Tuple4(addedDaten, removedDaten, addedZusatz, removedZusatz);
   }
+
+  List<String> progNames;
+  void setProgNames(List progNames) {
+    this.progNames = progNames;
+  }
+
+  List<String> getProgNames() {
+    return progNames;
+  }
 }

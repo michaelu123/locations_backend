@@ -212,7 +212,36 @@ class LocationsClient {
       String tableBase, String latRound, String lonRound) async {
     final req =
         "/deleteloc/$tableBase?lat=$latRound&lon=$lonRound&haszusatz=$hasZusatz";
-    Map res = await reqWithRetry("DELETE", req);
+    Map _ = await reqWithRetry("DELETE", req);
+  }
+
+  Future<void> deleteImage(String tableBase, String imgPath) async {
+    final req = "/deleteimage/$tableBase/$imgPath";
+    Map _ = await reqWithRetry("DELETE", req);
+  }
+
+  Future<List> getMarkerCodeNames(String tableBase) async {
+    final req = "/markercodes/$tableBase";
+    List res = await reqWithRetry("GET", req);
     return res;
+  }
+
+  Future<Map> getMarkerCode(String tableBase, String name) async {
+    final req = "/markercode/$tableBase/$name";
+    Map res = await reqWithRetry("GET", req);
+    return res;
+  }
+
+  Future<void> postMarkerCode(
+      String tableBase, String name, String codeJS) async {
+    String req = "/addmarkercode/$tableBase/$name";
+    final headers = {"Content-type": "text/plain"};
+    Map res = await reqWithRetry("POST", req, body: codeJS, headers: headers);
+    return res;
+  }
+
+  Future<void> deleteMarkerCode(String tableBase, String name) async {
+    final req = "/deletemarkercode/$tableBase/$name";
+    Map _ = await reqWithRetry("DELETE", req);
   }
 }

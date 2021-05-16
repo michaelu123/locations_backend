@@ -121,5 +121,29 @@ class Storage extends ChangeNotifier {
     return fbClnt.deleteLoc(tableBase, latRound, lonRound);
   }
 
-  deleteImage(String tableBase, String imgPath) {}
+  Future<void> deleteImage(String tableBase, String imgPath) {
+    if (useLoc) return locClnt.deleteImage(tableBase, imgPath);
+    return fbClnt.deleteImage(tableBase, imgPath);
+  }
+
+  Future<List> getMarkerCodeNames(String tableBase) async {
+    if (useLoc) return locClnt.getMarkerCodeNames(tableBase);
+    return fbClnt.getMarkerCodeNames(tableBase);
+  }
+
+  Future<Map> getMarkerCode(String tableBase, String name) async {
+    if (useLoc) return locClnt.getMarkerCode(tableBase, name);
+    return fbClnt.getMarkerCode(tableBase, name);
+  }
+
+  Future<void> postMarkerCode(
+      String tableBase, String name, String codeJS) async {
+    if (useLoc) return locClnt.postMarkerCode(tableBase, name, codeJS);
+    return fbClnt.postMarkerCode(tableBase, name, codeJS);
+  }
+
+  Future<void> deleteMarkerCode(String tableBase, String name) async {
+    if (useLoc) return locClnt.deleteMarkerCode(tableBase, name);
+    return fbClnt.deleteMarkerCode(tableBase, name);
+  }
 }

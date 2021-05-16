@@ -40,7 +40,7 @@ class Eval {
   }
 
   dynamic evalAssS(Assignment assS) {
-    context[assS.id.id] = evalExpr(assS.expr);
+    context["_" + assS.id.id] = evalExpr(assS.expr);
     return null;
   }
 

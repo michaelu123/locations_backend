@@ -352,6 +352,26 @@ class FirebaseClient {
   Future<void> deleteLoc(String tableBase, String latRound, String lonRound) {
     throw UnimplementedError();
   }
+
+  Future<void> deleteImage(String tableBase, String imgPath) {
+    throw UnimplementedError();
+  }
+
+  Future<List> getMarkerCodeNames(String tableBase) {
+    throw UnimplementedError();
+  }
+
+  Future<Map> getMarkerCode(String tableBase, String name) {
+    throw UnimplementedError();
+  }
+
+  Future<void> postMarkerCode(String tableBase, String name, String codeJS) {
+    throw UnimplementedError();
+  }
+
+  Future<void> deleteMarkerCode(String tableBase, String name) {
+    throw UnimplementedError();
+  }
 }
 
 // like within, but sw/ne instead of circle/radius

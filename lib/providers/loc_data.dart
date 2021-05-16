@@ -114,9 +114,10 @@ class LocData with ChangeNotifier {
     final coord = Coord();
     coord.lat = LocationsDB.lat;
     coord.lon = LocationsDB.lon;
-    coord.quality =
-        LocationsDB.qualityOfLoc(locDaten[datenIndex], locZusatz, 1);
-    coord.hasImage = locImages.length > 0;
+    coord.dcount = 1;
+    coord.icount = locImages.length;
+    coord.quality = LocationsDB.qualityOfLoc(
+        locDaten[datenIndex], locZusatz, coord.dcount, coord.icount);
     markers.current(coord);
   }
 
@@ -254,9 +255,11 @@ class LocData with ChangeNotifier {
     final coord = Coord();
     coord.lat = LocationsDB.lat;
     coord.lon = LocationsDB.lon;
-    coord.quality =
-        LocationsDB.qualityOfLoc(locDaten[datenIndex], locZusatz, 1);
-    coord.hasImage = locImages.length > 0;
+    coord.dcount = 1;
+    coord.icount = locImages.length;
+    coord.quality = LocationsDB.qualityOfLoc(
+        locDaten[datenIndex], locZusatz, coord.dcount, coord.icount);
+
     markers.current(coord);
 
     return imagesIndex;
@@ -271,9 +274,10 @@ class LocData with ChangeNotifier {
     final coord = Coord();
     coord.lat = LocationsDB.lat;
     coord.lon = LocationsDB.lon;
-    coord.quality =
-        LocationsDB.qualityOfLoc(locDaten[datenIndex], locZusatz, 1);
-    coord.hasImage = locImages.length > 0;
+    coord.dcount = 1;
+    coord.icount = locImages.length;
+    coord.quality = LocationsDB.qualityOfLoc(
+        locDaten[datenIndex], locZusatz, coord.dcount, coord.icount);
     markers.current(coord);
 
     return imgPath;

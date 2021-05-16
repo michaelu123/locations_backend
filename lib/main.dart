@@ -3,25 +3,25 @@ import 'dart:io';
 
 //import 'package:firebase_core/firebase_core.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
+import 'package:path/path.dart' as path;
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:locations/providers/base_config.dart';
 import 'package:locations/providers/storage.dart';
-import 'package:locations/screens/program.dart';
-//import 'package:locations/screens/account.dart';
-import 'package:locations/utils/db.dart';
-import 'package:locations/utils/syntax.dart';
-import 'package:locations/utils/utils.dart';
 import 'package:locations/providers/loc_data.dart';
 import 'package:locations/providers/markers.dart';
 import 'package:locations/providers/settings.dart';
+import 'package:locations/utils/db.dart';
+import 'package:locations/utils/syntax.dart';
+import 'package:locations/utils/utils.dart';
 import 'package:locations/screens/bilder.dart';
 import 'package:locations/screens/daten.dart';
 import 'package:locations/screens/karte.dart';
 import 'package:locations/screens/photo.dart';
 import 'package:locations/screens/splash_screen.dart';
 import 'package:locations/screens/zusatz.dart';
-import 'package:path/path.dart' as path;
-import 'package:provider/provider.dart';
+import 'package:locations/screens/markercode.dart';
+//import 'package:locations/screens/account.dart';
 
 void main() {
   runApp(MyApp());
@@ -117,7 +117,7 @@ class MyApp extends StatelessWidget {
               ZusatzScreen.routeName: (ctx) => ZusatzScreen(),
               KartenScreen.routeName: (ctx) => KartenScreen(),
               PhotoScreen.routeName: (ctx) => PhotoScreen(),
-              ProgramSelector.routeName: (ctx) => ProgramSelector(),
+              MarkerCodeScreen.routeName: (ctx) => MarkerCodeScreen(),
             },
           );
         },
@@ -130,7 +130,7 @@ class MyApp extends StatelessWidget {
       Storage strgClnt, BuildContext ctx) async {
     MsgModel msgModel = Provider.of<MsgModel>(ctx, listen: false);
 
-    msgModel.setMessage("Loading...");
+    msgModel.setMessage("Laden...");
     await initExtPath();
     // allow external storage config files
     final extPath = getExtPath();
@@ -141,7 +141,6 @@ class MyApp extends StatelessWidget {
     String serverName = settings.getConfigValueS("servername");
     int serverPort = settings.getConfigValueI("serverport");
     String serverUrl = "http://$serverName:$serverPort";
-    msgModel.setMessage("Loading configurations from $serverUrl...");
     settings.setConfigValue("username", "MUH");
 
     //final fbApp = await Firebase.initializeApp();
@@ -157,6 +156,7 @@ class MyApp extends StatelessWidget {
       imagesFelder: [],
     );
 
+    msgModel.setMessage("Lade Konfigurationsdateien von $serverUrl...");
     try {
       List configs = await strgClnt.getConfigs();
       print("lc $configs");
@@ -168,11 +168,11 @@ class MyApp extends StatelessWidget {
         print("ok");
       }
     } catch (e) {
-      msgModel.setMessage("Error $e");
+      msgModel.setMessage("Fehler $e");
     }
 
     var bc = Map<String, List>();
-    msgModel.setMessage("Loading config files from $configDir");
+    msgModel.setMessage("Lade Konfigurationsdateien von $configDir");
     List<FileSystemEntity> configFiles = await configDir.list().toList();
     await Future.forEach(configFiles, (f) async {
       if (f is File && f.path.endsWith(".json")) {
@@ -184,7 +184,7 @@ class MyApp extends StatelessWidget {
           if (bc[name] == null) bc[name] = [];
           bc[name].add(content2JS);
         } catch (e) {
-          msgModel.setMessage("Error $e");
+          msgModel.setMessage("Fehler $e");
         }
       }
     });
@@ -208,6 +208,22 @@ class MyApp extends StatelessWidget {
       zusatzFelder: baseConfig.getDbZusatzFelder(),
       imagesFelder: baseConfig.getDbImagesFelder(),
     );
+    msgModel.setMessage("Lade Marker-Code");
+    String tableBase = baseConfig.getDbTableBaseName();
+
+    String markerCodePath = path.join(extPath, "markerCode", tableBase);
+    Directory markerCodeDir = Directory(markerCodePath);
+    await markerCodeDir.create(recursive: true);
+
+    final progNames = await strgClnt.getMarkerCodeNames(tableBase);
+    for (String name in progNames) {
+      File f = File(path.join(markerCodePath, name + ".json"));
+      if (await f.exists()) continue;
+      Map codeJS = await strgClnt.getMarkerCode(tableBase, name);
+      await f.writeAsString(json.encode(codeJS), flush: true);
+    }
+    baseConfig.setProgNames(progNames.cast<String>());
+    settings.setConfigValue("progName", "Standard");
     msgModel.setMessage("");
 
     // used during setup of FireBase
