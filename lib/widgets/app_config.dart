@@ -148,8 +148,7 @@ class _AppConfigState extends State<AppConfig> {
                                   groupValue: groupValue,
                                   value: choices[index2],
                                   onChanged: (value) {
-                                    settings.setConfigValueS(
-                                        key, "string", value);
+                                    settings.setConfigValue(key, value);
                                     setState(() => groupValuesMap[key] = value);
                                   },
                                 ),

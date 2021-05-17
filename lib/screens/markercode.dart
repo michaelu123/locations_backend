@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:locations/providers/markers.dart';
 import 'package:locations/providers/settings.dart';
 import 'package:locations/screens/karte.dart';
 import 'package:locations/screens/splash_screen.dart';
@@ -20,19 +21,21 @@ class MarkerCodeScreen extends StatefulWidget {
 }
 
 class _MarkerCodeScreenState extends State<MarkerCodeScreen> {
+  static String progName;
+  static List<String> progNames;
+  static Map<String, String> progs = {};
+  static Map<String, String> descs = {};
+
   BaseConfig baseConfigNL;
   Storage strgClntNL;
   Settings settingsNL;
+  Markers markersNL;
   String tableBase;
   List<Statement> statements;
-  List<String> progNames;
-  Map<String, String> progs = {};
-  Map<String, String> descs = {};
   Future mcFuture;
   String extPath;
   String markerCodePath;
   final String chooseProg = "Marker-Code wählen";
-  String progName;
   String copyProg = "";
   String errorMessage;
   final nameCtrlr = TextEditingController();
@@ -46,28 +49,32 @@ class _MarkerCodeScreenState extends State<MarkerCodeScreen> {
     baseConfigNL = Provider.of<BaseConfig>(context, listen: false);
     strgClntNL = Provider.of<Storage>(context, listen: false);
     settingsNL = Provider.of<Settings>(context, listen: false);
+    markersNL = Provider.of<Markers>(context, listen: false);
 
     tableBase = baseConfigNL.getDbTableBaseName();
 
     progNames = ["Standard", "Neu", "_div_"] + baseConfigNL.getProgNames();
     final name = settingsNL.getConfigValueS("progName", defVal: "Standard");
     copyProg = "";
+    if (progName == null) progName = "Standard";
     extPath = getExtPath();
     markerCodePath = path.join(extPath, "markerCode", tableBase);
     mcFuture = setProgram(name);
   }
 
   Future<void> setProgram(String name) async {
-    if (name == progName) return;
     if (name == "Standard") {
       nameCtrlr.text = "Standard";
       codeCtrlr.text = baseConfigNL.getProgram();
       descCtrlr.text = "Standard-Code, definiert in der config-Datei";
       copyProg = "";
+      if (name == progName) return;
     } else if (name == "Neu") {
       nameCtrlr.text = "";
       codeCtrlr.text = "";
       descCtrlr.text = "";
+      setState(() => progName = name);
+      return;
     } else {
       if (progs[name] == null) {
         File f = File(path.join(markerCodePath, name + ".json"));
@@ -86,7 +93,9 @@ class _MarkerCodeScreenState extends State<MarkerCodeScreen> {
       copyProg = "";
     }
     errorMessage = null;
-    settingsNL.setConfigValueS("progName", "string", name);
+    print("markercode setconf");
+    if (name == progName || name == "Neu") return;
+    settingsNL.setConfigValue("progName", name);
     if (codeCtrlr.text != "") {
       statements = parseProgram(codeCtrlr.text);
       if (statements == null || statements.isEmpty) {
@@ -98,6 +107,8 @@ class _MarkerCodeScreenState extends State<MarkerCodeScreen> {
         return;
       }
       LocationsDB.setProgram(statements);
+      // await LocationsDB.setBaseDB(baseConfigNL);
+      await markersNL.readMarkersAgain();
     }
 
     setState(() => progName = name);
@@ -135,6 +146,9 @@ class _MarkerCodeScreenState extends State<MarkerCodeScreen> {
   }
 
   Future<void> loeschen() async {
+    bool sure =
+        await areYouSure(context, "Wollen Sie wirklich $progName löschen?");
+    if (!sure) return;
     progNames.remove(progName);
     progs.remove(progName);
     descs.remove(progName);

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
@@ -53,4 +54,25 @@ Future<void> deleteAllImages(String tableBase) async {
   images.forEach((image) async {
     await image.delete();
   });
+}
+
+Future<bool> areYouSure(BuildContext context, String msg) {
+  return showDialog(
+        context: context,
+        builder: (context) => new AlertDialog(
+          title: const Text('Sicher?'),
+          content: Text(msg),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Nein"),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: const Text("Ja"),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        ),
+      ) ??
+      false;
 }

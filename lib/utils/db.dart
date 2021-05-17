@@ -162,11 +162,11 @@ class LocationsDB {
     assert(false);
   }
 
-  static int qualityOfLoc(Map daten, List zusatz, int dcount, int icount) {
+  static int qualityOfLoc(Map daten, List zusatz, List images, int dcount) {
     daten["_dcount"] = dcount;
     daten["_zcount"] = zusatz.length;
-    daten["_icount"] = icount;
-    int r = evalProgram(statements, daten, zusatz);
+    daten["_icount"] = images.length;
+    int r = evalProgram(statements, daten, zusatz, images);
     if (r == null)
       r = 0;
     else if (r > 2)
@@ -178,6 +178,7 @@ class LocationsDB {
   static Future<List<Coord>> readCoords() async {
     Map<String, Map<String, dynamic>> daten = {};
     Map<String, List> zusatz = {};
+    Map<String, List> images = {};
     Map<String, Coord> map = {};
     final resD = getAllData("daten");
     for (final res in resD) {
@@ -216,6 +217,12 @@ class LocationsDB {
     final resI = getAllData("images");
     for (final res in resI) {
       final key = keyOf(res);
+      List l = images[key];
+      if (l == null) {
+        l = [];
+        images[key] = l;
+      }
+      l.add(res);
       var coord = map[key];
       if (coord == null) {
         coord = Coord();
@@ -232,14 +239,20 @@ class LocationsDB {
     map.forEach((key, coord) {
       final m = daten[key] != null ? makeWritableMap(daten[key]) : {};
       final z = zusatz[key];
-      List l;
+      final i = images[key];
+      List zl;
       if (z != null) {
-        l = makeWritableList(z);
+        zl = makeWritableList(z);
       } else {
-        l = [];
+        zl = [];
       }
-      coord.quality = qualityOfLoc(m, l, coord.dcount, coord.icount);
-      // coord.quality = coord.count > 2 ? 2 : coord.count;
+      List il;
+      if (i != null) {
+        il = makeWritableList(i);
+      } else {
+        il = [];
+      }
+      coord.quality = qualityOfLoc(m, zl, il, coord.dcount);
     });
     return map.values.toList();
   }

@@ -38,6 +38,17 @@ class Markers extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> readMarkersAgain() async {
+    List<Coord> coords = await LocationsDB.readCoords();
+    _markers = {};
+    coords.forEach((coord) {
+      add(_markers, coord);
+    });
+    changedF = true;
+    changedG = true;
+    notifyListeners();
+  }
+
   fm.Marker coord2MarkerF(Coord coord) {
     final color = colors[coord.quality];
     return fm.Marker(

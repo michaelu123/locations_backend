@@ -74,6 +74,8 @@ class _ImagesScreenState extends State<ImagesScreen>
   }
 
   Future<void> deleteImage() async {
+    if (!await areYouSure(context, 'Wollen Sie das Bild wirklich löschen?'))
+      return;
     String imgPath = locDataNL.deleteImage(markersNL);
     indexModelNL.set(locDataNL.imagesIndex);
     await LocationsDB.deleteImage(imgPath);
@@ -90,7 +92,7 @@ class _ImagesScreenState extends State<ImagesScreen>
     return f;
   }
 
-  Future<Tuple2<File, String>> getImageFileIndexed(
+  Future<Tuple3<File, String, String>> getImageFileIndexed(
     BaseConfig baseConfig,
     Storage strgClnt,
     LocData locData,
@@ -99,8 +101,9 @@ class _ImagesScreenState extends State<ImagesScreen>
     String imgPath = locData.getImgPath(index);
     String imgUrl = locData.getImgUrl(index);
     String bemerkung = locData.getImgBemerkung(index);
+    String created = locData.getImgCreated(index);
     File img = await getImageFile(imgPath, imgUrl);
-    return Tuple2(img, bemerkung);
+    return Tuple3(img, bemerkung, created);
   }
 
   Future<int> addPhoto(LocData locData, String userName, String region,
@@ -334,9 +337,12 @@ class _ImagesScreenState extends State<ImagesScreen>
                       future: getImageFileIndexed(
                           baseConfig, strgClnt, locData, index),
                       builder: (ctx, snap) {
-                        TextEditingController controller =
+                        TextEditingController bemController =
                             TextEditingController(
                                 text: snap.data != null ? snap.data.item2 : "");
+                        TextEditingController creController =
+                            TextEditingController(
+                                text: snap.data != null ? snap.data.item3 : "");
                         if (snap.connectionState == ConnectionState.waiting) {
                           return const Center(
                               child: const Text(
@@ -375,10 +381,18 @@ class _ImagesScreenState extends State<ImagesScreen>
                               child: TextField(
                                   decoration:
                                       InputDecoration(labelText: "Bemerkung"),
-                                  controller: controller,
+                                  controller: bemController,
                                   onSubmitted: (text) {
                                     locData.setImgBemerkung(text, index);
                                   }),
+                              padding: EdgeInsets.all(10),
+                            ),
+                            Padding(
+                              child: TextField(
+                                  decoration:
+                                      InputDecoration(labelText: "Created"),
+                                  controller: creController,
+                                  onSubmitted: null),
                               padding: EdgeInsets.all(10),
                             ),
                             Expanded(

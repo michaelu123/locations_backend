@@ -39,7 +39,7 @@ class KartenScreen extends StatefulWidget {
 
 class _KartenScreenState extends State<KartenScreen> with Felder {
   double mapLat = 0, mapLon = 0;
-  final fmapController = fm.MapController();
+  fm.MapController fmapController;
   gm.GoogleMapController gmapController;
   Future markersFuture;
   ll.LatLng center;
@@ -62,6 +62,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     strgClntNL = Provider.of<Storage>(context, listen: false);
     locDataNL = Provider.of<LocData>(context, listen: false);
     tableBase = baseConfigNL.getDbTableBaseName();
+    fmapController = fm.MapController();
   }
 
   @override
@@ -202,6 +203,8 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
   }
 
   Future<void> deleteLoc(Markers markers) async {
+    if (!await areYouSure(context, 'Wollen Sie den Ort wirklich löschen?'))
+      return;
     int stellen = baseConfigNL.stellen();
     String latRound = roundDS(mapLat, stellen);
     String lonRound = roundDS(mapLon, stellen);
@@ -250,25 +253,8 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     }
   }
 
-  Future<bool> _onBackPressed() {
-    return showDialog(
-          context: context,
-          builder: (context) => new AlertDialog(
-            title: const Text('Sicher?'),
-            content: const Text('Wollen Sie die App verlassen?'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text("Nein"),
-                onPressed: () => Navigator.of(context).pop(false),
-              ),
-              TextButton(
-                child: const Text("Ja"),
-                onPressed: () => Navigator.of(context).pop(true),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+  Future<bool> _onBackPressed() async {
+    return await areYouSure(context, 'Wollen Sie die App verlassen?');
   }
 
   void zoomMap(bool zoomIn) {
@@ -491,7 +477,6 @@ class OsmMap extends StatelessWidget {
   Widget build(BuildContext context) {
     final configGPS = state.baseConfigNL.getGPS();
     final settingsGPS = state.settingsNL.getGPS();
-
     return fm.FlutterMap(
       mapController: state.fmapController,
       options: fm.MapOptions(
