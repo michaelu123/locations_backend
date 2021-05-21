@@ -72,7 +72,7 @@ class LocGrammarDefinition extends GrammarDefinition {
         ref0(falseToken),
         ref0(nullToken),
         ref0(idToken),
-      ].toChoiceParser(/*failureJoiner: selectFarthestJoined*/);
+      ].toChoiceParser(failureJoiner: selectFarthestJoined);
 
   Parser trueToken() => ref1(token, 'true');
   Parser falseToken() => ref1(token, 'false');

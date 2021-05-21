@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
 
 String roundDS(double d, int stellen) {
   // trim trailing zeroes
@@ -28,19 +27,21 @@ Future<void> deleteImageFile(String tableBase, String imgPath) async {
 String _extPath;
 
 Future<void> initExtPath() async {
-  try {
-    if (Platform.isAndroid) {
-      _extPath = (await getExternalStorageDirectory()).path;
-    } else if (Platform.isIOS) {
-      _extPath = (await getApplicationDocumentsDirectory()).path;
-    } else {
-      _extPath = "./extPath";
-      //but Windows or other platforms fail elsewhere,
-      // e.g. Windows because of sqflite, or Chrome Web because of dart:io
-    }
-  } catch (e) {
-    _extPath = "./extPath";
-  }
+  //   try {
+  //   if (Platform.isAndroid) {
+  //     _extPath = (await getExternalStorageDirectory()).path;
+  //   } else if (Platform.isIOS) {
+  //     _extPath = (await getApplicationDocumentsDirectory()).path;
+  //   } else {
+  //     _extPath = "./extPath";
+  //     //but Windows or other platforms fail elsewhere,
+  //     // e.g. Windows because of sqflite, or Chrome Web because of dart:io
+  //   }
+  // } catch (e) {
+  //   _extPath = "./extPath";
+  // }
+
+  _extPath = "./extPath"; // on Windows
 }
 
 String getExtPath() {

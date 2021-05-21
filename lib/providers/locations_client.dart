@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
+import 'package:cryptography/cryptography.dart';
 
 class LocationsClient {
   //"http://raspberrylan.1qgrvqjevtodmryr.myfritz.net:80/";
@@ -12,10 +13,60 @@ class LocationsClient {
   String extPath;
   bool hasZusatz;
 
-  void init(String serverUrl, String extPath, bool hasZusatz) {
+  Future<void> init(String serverUrl, String extPath, bool hasZusatz) async {
     this.serverUrl = serverUrl;
     this.extPath = extPath;
     this.hasZusatz = hasZusatz;
+
+    // https: //cryptography.io/en/latest/hazmat/primitives/asymmetric/x25519/
+    final algorithm = X25519();
+
+    // Alice chooses her key pair
+    final aliceKeyPair = await algorithm.newKeyPair();
+
+    // // Alice knows Bob's public key
+    // final bobKeyPair = await algorithm.newKeyPair();
+    // final bobPublicKey = await bobKeyPair.extractPublicKey();
+
+    // final bobPublicKeyBytes = bobPublicKey.bytes;
+    // final bobPublicKey2 =
+    //     SimplePublicKey(bobPublicKeyBytes, type: KeyPairType.x25519);
+
+    final alicePubKey = await aliceKeyPair.extractPublicKey();
+    final aliceB64 = base64.encode(alicePubKey.bytes);
+    Map res = await kex("ich", aliceB64);
+    final bobPublicKey2 =
+        SimplePublicKey(base64.decode(res["pubkey"]), type: KeyPairType.x25519);
+
+    // Alice calculates the shared secret.
+    final sharedSecret = await algorithm.sharedSecretKey(
+      keyPair: aliceKeyPair,
+      //remotePublicKey: bobPublicKey,
+      remotePublicKey: bobPublicKey2,
+    );
+    final sharedSecretBytes = await sharedSecret.extractBytes();
+    final sharedSecretB64 = base64.encode(sharedSecretBytes);
+    print('Shared secret: $sharedSecretB64');
+
+    final message = utf8.encode("dies ist ein test");
+    final cryptAlg = AesCbc.with256bits(macAlgorithm: MacAlgorithm.empty);
+    final encMsg = await cryptAlg.encrypt(message,
+        secretKey: SecretKey(sharedSecretBytes));
+    final ctxt = encMsg.cipherText;
+    final iv = encMsg.nonce;
+
+    // final mac = encMsg.mac; // = Mac.empty
+    final secBox = SecretBox(ctxt, nonce: iv, mac: Mac.empty);
+    final decMsg1 =
+        await cryptAlg.decrypt(encMsg, secretKey: SecretKey(sharedSecretBytes));
+    final decMsg2 =
+        await cryptAlg.decrypt(secBox, secretKey: SecretKey(sharedSecretBytes));
+    print("msg1 ${utf8.decode(decMsg1)}");
+    print("msg2 ${utf8.decode(decMsg2)}");
+
+    res = await test("ich", base64.encode(ctxt), base64.encode(iv));
+    print("resp $res");
+    print("msg3 ${res['res']}");
   }
 
   Future<dynamic> _req2(String method, String req,
@@ -243,5 +294,21 @@ class LocationsClient {
   Future<void> deleteMarkerCode(String tableBase, String name) async {
     final req = "/deletemarkercode/$tableBase/$name";
     Map _ = await reqWithRetry("DELETE", req);
+  }
+
+  Future<Map> kex(String id, String alicePubKey) async {
+    Map<String, String> headers = {"Content-type": "application/json"};
+    String req = "/kex";
+    String body = json.encode({"id": id, "pubkey": alicePubKey});
+    Map m = await reqWithRetry("POST", req, body: body, headers: headers);
+    return m;
+  }
+
+  Future<Map> test(String id, String encData, String iv) async {
+    Map<String, String> headers = {"Content-type": "application/json"};
+    String req = "/test";
+    String body = json.encode({"id": id, "enc": encData, "iv": iv});
+    Map m = await reqWithRetry("POST", req, body: body, headers: headers);
+    return m;
   }
 }

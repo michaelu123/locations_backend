@@ -81,8 +81,6 @@ class _ImagesScreenState extends State<ImagesScreen>
     await LocationsDB.deleteImage(imgPath);
     await strgClntNL.deleteImage(tableBase, imgPath);
     await deleteImageFile(tableBase, imgPath);
-    // perhaps delete on Server?
-    // or not delete if not newer lastStored?
   }
 
   Future<File> getImageFile(String imgPath, String imgUrl) async {
@@ -93,8 +91,6 @@ class _ImagesScreenState extends State<ImagesScreen>
   }
 
   Future<Tuple3<File, String, String>> getImageFileIndexed(
-    BaseConfig baseConfig,
-    Storage strgClnt,
     LocData locData,
     int index,
   ) async {
@@ -165,7 +161,6 @@ class _ImagesScreenState extends State<ImagesScreen>
   Widget build(BuildContext context) {
     final baseConfig = Provider.of<BaseConfig>(context);
     final locData = Provider.of<LocData>(context);
-    final strgClnt = Provider.of<Storage>(context);
     final pageController = PageController();
 
     // Big problem to move to new image, AND have the right
@@ -334,8 +329,7 @@ class _ImagesScreenState extends State<ImagesScreen>
                   itemCount: locData.getImagesCount(),
                   itemBuilder: (ctx, index) {
                     return FutureBuilder(
-                      future: getImageFileIndexed(
-                          baseConfig, strgClnt, locData, index),
+                      future: getImageFileIndexed(locData, index),
                       builder: (ctx, snap) {
                         TextEditingController bemController =
                             TextEditingController(

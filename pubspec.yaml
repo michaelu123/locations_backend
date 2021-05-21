@@ -48,6 +48,7 @@ dependencies:
   cupertino_icons: ^1.0.0
   tuple: ^2.0.0
   filepicker_windows: ^2.0.0
+  cryptography: ^2.0.1
 
 dependency_overrides:
   rxdart: ^0.25.0

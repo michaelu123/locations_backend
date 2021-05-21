@@ -93,7 +93,6 @@ class _MarkerCodeScreenState extends State<MarkerCodeScreen> {
       copyProg = "";
     }
     errorMessage = null;
-    print("markercode setconf");
     if (name == progName || name == "Neu") return;
     settingsNL.setConfigValue("progName", name);
     if (codeCtrlr.text != "") {
@@ -141,6 +140,7 @@ class _MarkerCodeScreenState extends State<MarkerCodeScreen> {
 
     baseConfigNL.setProgNames(progNames.sublist(3));
     LocationsDB.setProgram(statements);
+    settingsNL.setConfigValue("progName", progName);
 
     Navigator.of(context).pushNamed(KartenScreen.routeName);
   }

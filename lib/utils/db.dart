@@ -163,9 +163,9 @@ class LocationsDB {
   }
 
   static int qualityOfLoc(Map daten, List zusatz, List images, int dcount) {
-    daten["_dcount"] = dcount;
-    daten["_zcount"] = zusatz.length;
-    daten["_icount"] = images.length;
+    daten["_d_zahl"] = dcount;
+    daten["_z_zahl"] = zusatz.length;
+    daten["_b_zahl"] = images.length;
     int r = evalProgram(statements, daten, zusatz, images);
     if (r == null)
       r = 0;

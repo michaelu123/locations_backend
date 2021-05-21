@@ -53,6 +53,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
   Storage strgClntNL;
   LocData locDataNL;
   String tableBase;
+
   @override
   void initState() {
     super.initState();
@@ -270,9 +271,6 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
   Widget build(BuildContext context) {
     // strgClnt.sayHello(tableBase);
     final settings = Provider.of<Settings>(context);
-    strgClntNL.setClnt(
-        settings.getConfigValueS("storage", defVal: "LocationsServer"));
-
     final settingsGPS = settings.getGPS();
     useGoogle =
         settings.getConfigValueS("mapprovider", defVal: "OpenStreetMap")[0] ==

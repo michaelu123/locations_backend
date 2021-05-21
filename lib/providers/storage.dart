@@ -12,20 +12,23 @@ class Storage extends ChangeNotifier {
   LocationsClient locClnt;
   FirebaseClient fbClnt;
 
-  void setClnt(String clnt) {
-    useLoc = clnt == "LocationsServer";
+  void setClnt(bool useLoc) {
+    if (useLoc != this.useLoc) {
+      // logoff TODO
+    }
+    this.useLoc = useLoc;
     if (locClnt == null) locClnt = LocationsClient();
     if (fbClnt == null) fbClnt = FirebaseClient();
   }
 
-  void init(
+  Future<void> init(
       {String serverUrl,
       String extPath,
       List datenFelder,
       List zusatzFelder,
-      List imagesFelder}) {
+      List imagesFelder}) async {
     bool hasZusatz = zusatzFelder.length > 0;
-    locClnt.init(serverUrl, extPath, hasZusatz);
+    await locClnt.init(serverUrl, extPath, hasZusatz);
     fbClnt.init(extPath);
     fbClnt.initFelder(datenFelder, zusatzFelder, imagesFelder);
   }

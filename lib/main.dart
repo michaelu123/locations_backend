@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 //import 'package:firebase_core/firebase_core.dart';
-//import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:locations/screens/locaccount.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,7 @@ import 'package:locations/screens/photo.dart';
 import 'package:locations/screens/splash_screen.dart';
 import 'package:locations/screens/zusatz.dart';
 import 'package:locations/screens/markercode.dart';
-//import 'package:locations/screens/account.dart';
+import 'package:locations/screens/account.dart';
 
 void main() {
   runApp(MyApp());
@@ -29,6 +30,7 @@ void main() {
 
 class MyApp extends StatelessWidget {
   // https://pub.dev/packages/flutter_app_lock  ?
+  static bool useLoc = true;
 
   @override
   Widget build(BuildContext context) {
@@ -94,10 +96,11 @@ class MyApp extends StatelessWidget {
                     ),
                   );
                 }
-                return KartenScreen();
-                /*
-                return StreamBuilder<User>(
-                  stream: FirebaseAuth.instance.authStateChanges(),
+                // return KartenScreen();
+                return StreamBuilder(
+                  stream: useLoc
+                      ? LocAuth.instance.authStateChanges()
+                      : FirebaseAuth.instance.authStateChanges(),
                   builder: (ctx, snapShot) {
                     if (snapShot.connectionState == ConnectionState.waiting) {
                       return SplashScreen();
@@ -105,10 +108,9 @@ class MyApp extends StatelessWidget {
                     if (snapShot.hasData) {
                       return KartenScreen();
                     }
-                    return AccountScreen();
+                    return useLoc ? LocAccountScreen() : AccountScreen();
                   },
                 );
-                */
               },
             ),
             routes: {
@@ -145,10 +147,10 @@ class MyApp extends StatelessWidget {
 
     //final fbApp = await Firebase.initializeApp();
     //print("fbapp $fbApp");
-
-    strgClnt.setClnt(
-        settings.getConfigValueS("storage", defVal: "LocationsServer"));
-    strgClnt.init(
+    useLoc = settings.getConfigValueS("storage", defVal: "LocationsServer") ==
+        "LocationsServer";
+    strgClnt.setClnt(useLoc);
+    await strgClnt.init(
       serverUrl: serverUrl,
       extPath: extPath,
       datenFelder: [],
@@ -201,7 +203,7 @@ class MyApp extends StatelessWidget {
     baseConfig.setInitially(bc, settings.initialBase());
     await LocationsDB.setBaseDB(baseConfig);
 
-    strgClnt.init(
+    await strgClnt.init(
       serverUrl: serverUrl,
       extPath: extPath,
       datenFelder: baseConfig.getDbDatenFelder(),
