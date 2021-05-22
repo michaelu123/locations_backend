@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
+import 'package:locations/providers/locations_client.dart';
 import 'package:locations/providers/settings.dart';
 import 'package:locations/widgets/app_config.dart';
 import 'package:locations/widgets/auth_form.dart';
@@ -8,24 +11,67 @@ import 'package:provider/provider.dart';
 
 class LocAuth {
   static LocAuth _instance;
-  static StreamController _controller;
+  StreamController _controller;
+  LocationsClient _locClnt;
+  SecretKey sharedSecret;
+  AesCbc cryptAlg;
+  String id;
 
   static LocAuth get instance {
     if (_instance == null) _instance = LocAuth();
     return _instance;
   }
 
-  Future<UserCredential> signInWithEmailAndPassword(
-      {String email, String password}) async {
-    return null;
-  }
-
-  Future<UserCredential> createUserWithEmailAndPassword(
+  Future<UserCredential> postAuth(String loginOrSignon,
       {String email, String password, String username}) async {
-    return null;
+    // https://cryptography.io/en/latest/hazmat/primitives/asymmetric/x25519/
+    final algorithm = X25519();
+    // my key pair
+    final myKeyPair = await algorithm.newKeyPair();
+    try {
+      await myKeyPair.extractPublicKey();
+    } catch (ex) {
+      print(ex);
+    }
+    final myPubKey = await myKeyPair.extractPublicKey();
+    final myB64 = base64.encode(myPubKey.bytes);
+    id = DateTime.now().millisecondsSinceEpoch.toString();
+    Map res = await _locClnt.kex(id, myB64);
+    final hisPublicKey =
+        SimplePublicKey(base64.decode(res["pubkey"]), type: KeyPairType.x25519);
+
+    // calculate the shared secret.
+    sharedSecret = await algorithm.sharedSecretKey(
+      keyPair: myKeyPair,
+      remotePublicKey: hisPublicKey,
+    );
+    Map cred = {
+      "id": id,
+      "email": email,
+      "password": password,
+      "username": username
+    };
+    String credJS = json.encode(cred);
+    final credB = utf8.encode(credJS);
+    cryptAlg = AesCbc.with256bits(macAlgorithm: MacAlgorithm.empty);
+    final credEnc = await cryptAlg.encrypt(credB, secretKey: sharedSecret);
+    final ctxt = credEnc.cipherText;
+    final iv = credEnc.nonce;
+    final credMsg = {
+      "id": id,
+      "ctxt": base64.encode(ctxt),
+      "iv": base64.encode(iv)
+    };
+    final credMsgJS = json.encode(credMsg);
+    final map = await _locClnt.postAuth(loginOrSignon, credMsgJS);
+    print("map $map");
+    final uc = UserCredential(map["id"], map["username"]);
+    _controller.add(uc);
+    return uc;
   }
 
-  Stream authStateChanges() {
+  Stream authStateChanges(LocationsClient locClnt) {
+    _locClnt = locClnt;
     if (_controller == null) {
       _controller = StreamController(onListen: () {
         if (loggedIn()) {
@@ -39,12 +85,26 @@ class LocAuth {
   }
 
   bool loggedIn() {
-    return true;
+    return false;
+  }
+
+  signOut() {
+    print("Signed out");
+    _controller.addError("error");
   }
 }
 
 class UserCredential {
-  String username;
+  final String _id;
+  final String _username;
+  UserCredential(this._id, this._username);
+  String get username {
+    return _username;
+  }
+
+  String get id {
+    return _id;
+  }
 }
 
 class LocAccountScreen extends StatefulWidget {
@@ -71,7 +131,8 @@ class _LocAccountScreenState extends State<LocAccountScreen> {
         isLoading = true;
       });
       if (isLogin) {
-        authResult = await auth.signInWithEmailAndPassword(
+        authResult = await auth.postAuth(
+          "login",
           email: email,
           password: password,
         );
@@ -79,13 +140,14 @@ class _LocAccountScreenState extends State<LocAccountScreen> {
         settingsNL.setConfigValue("username", username);
       } else {
         try {
-          authResult = await auth.createUserWithEmailAndPassword(
+          authResult = await auth.postAuth("signon",
               email: email, password: password, username: username);
         } catch (err) {
           if (err.message == null || !err.message.contains("already in use")) {
             throw (err);
           }
-          authResult = await auth.signInWithEmailAndPassword(
+          authResult = await auth.postAuth(
+            "login",
             email: email,
             password: password,
           );

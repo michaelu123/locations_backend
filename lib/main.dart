@@ -99,7 +99,7 @@ class MyApp extends StatelessWidget {
                 // return KartenScreen();
                 return StreamBuilder(
                   stream: useLoc
-                      ? LocAuth.instance.authStateChanges()
+                      ? LocAuth.instance.authStateChanges(strgClnt.locClnt)
                       : FirebaseAuth.instance.authStateChanges(),
                   builder: (ctx, snapShot) {
                     if (snapShot.connectionState == ConnectionState.waiting) {

@@ -311,4 +311,13 @@ class LocationsClient {
     Map m = await reqWithRetry("POST", req, body: body, headers: headers);
     return m;
   }
+
+  Future<Map> postAuth(String loginOrSignon, String cred) async {
+    Map<String, String> headers = {
+      "Content-type": "application/json",
+    };
+    String req = "/auth/" + loginOrSignon;
+    Map m = await reqWithRetry("POST", req, body: cred, headers: headers);
+    return m;
+  }
 }
