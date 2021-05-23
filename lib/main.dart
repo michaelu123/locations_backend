@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-//import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:locations/screens/locaccount.dart';
 import 'package:path/path.dart' as path;
@@ -145,8 +145,12 @@ class MyApp extends StatelessWidget {
     String serverUrl = "http://$serverName:$serverPort";
     settings.setConfigValue("username", "MUH");
 
+    // firebase not supported on Windows? See
+    // https://stackoverflow.com/questions/62743910/flutterhow-can-we-use-firebase-database-with-desktop-application
     //final fbApp = await Firebase.initializeApp();
     //print("fbapp $fbApp");
+    settings.setConfigValue(
+        "storage", "LocationsServer"); // until Firebase works on windows
     useLoc = settings.getConfigValueS("storage", defVal: "LocationsServer") ==
         "LocationsServer";
     strgClnt.setClnt(useLoc);

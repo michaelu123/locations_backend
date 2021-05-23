@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:locations/parser/val.dart';
 import 'package:locations/providers/locations_client.dart';
+import 'package:locations/screens/locaccount.dart';
 
 import 'firebase.dart';
 
@@ -14,7 +15,11 @@ class Storage extends ChangeNotifier {
 
   void setClnt(bool useLoc) {
     if (useLoc != this.useLoc) {
-      // logoff TODO
+      if (this.useLoc) {
+        LocAuth.instance.signOut();
+      } else {
+        fbClnt.logoff();
+      }
     }
     this.useLoc = useLoc;
     if (locClnt == null) locClnt = LocationsClient();

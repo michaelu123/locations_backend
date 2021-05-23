@@ -345,32 +345,38 @@ class FirebaseClient {
     return map;
   }
 
-  Future<void> official(String tableBase, Map<String, Object> daten) {
+  Future<void> official(String tableBase, Map<String, Object> daten) async {
     throw UnimplementedError();
   }
 
-  Future<void> deleteLoc(String tableBase, String latRound, String lonRound) {
+  Future<void> deleteLoc(
+      String tableBase, String latRound, String lonRound) async {
     throw UnimplementedError();
   }
 
-  Future<void> deleteImage(String tableBase, String imgPath) {
+  Future<void> deleteImage(String tableBase, String imgPath) async {
     throw UnimplementedError();
   }
 
-  Future<List> getMarkerCodeNames(String tableBase) {
+  Future<List> getMarkerCodeNames(String tableBase) async {
+    return [];
+  }
+
+  Future<Map> getMarkerCode(String tableBase, String name) async {
     throw UnimplementedError();
   }
 
-  Future<Map> getMarkerCode(String tableBase, String name) {
+  Future<void> postMarkerCode(
+      String tableBase, String name, String codeJS) async {
     throw UnimplementedError();
   }
 
-  Future<void> postMarkerCode(String tableBase, String name, String codeJS) {
+  Future<void> deleteMarkerCode(String tableBase, String name) async {
     throw UnimplementedError();
   }
 
-  Future<void> deleteMarkerCode(String tableBase, String name) {
-    throw UnimplementedError();
+  void logoff() {
+    //throw UnimplementedError();
   }
 }
 

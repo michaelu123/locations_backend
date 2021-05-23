@@ -82,13 +82,13 @@ class LocationsClient {
           headers: headers, body: body);
     }
     if (resp.statusCode >= 400) {
-      // Map errbody = json.decode(resp.body);
-      // String msg = errbody['error']['message'] ?? "Unknown error";
-      // throw HttpException(msg);
       String errBody = resp.body;
-      print("errbody $errBody");
-      // throw HttpException(errBody);
-      return null;
+      print("req2 code ${resp.statusCode} ${resp.reasonPhrase} $errBody");
+      try {
+        Map m = json.decode(errBody);
+        errBody = m.values.first;
+      } catch (_) {}
+      throw HttpException(errBody);
     }
     dynamic res = json.decode(resp.body);
     return res;
@@ -120,9 +120,14 @@ class LocationsClient {
     http.Response resp =
         await http.get(Uri.parse(serverUrl + req), headers: headers);
     if (resp.statusCode >= 400) {
+      String errBody = resp.body;
       print(
-          "reqBytes code ${resp.statusCode} ${resp.reasonPhrase} ${resp.body}");
-      return null;
+          "reqGetBytes code ${resp.statusCode} ${resp.reasonPhrase} $errBody");
+      try {
+        Map m = json.decode(errBody);
+        errBody = m.values.first;
+      } catch (ex) {}
+      throw HttpException(errBody);
     }
     return resp.bodyBytes;
   }
@@ -142,11 +147,14 @@ class LocationsClient {
     http.Response resp = await http.post(Uri.parse(serverUrl + req),
         headers: headers, body: body);
     if (resp.statusCode >= 400) {
-      print("_reqPostBytes code ${resp.statusCode} ${resp.reasonPhrase}");
       String errBody = resp.body;
-      print("_reqPostBytes errbody $errBody");
-      // throw HttpException(errBody);
-      return null;
+      print(
+          "reqPostBytes code ${resp.statusCode} ${resp.reasonPhrase} $errBody");
+      try {
+        Map m = json.decode(errBody);
+        errBody = m.values.first;
+      } catch (ex) {}
+      throw HttpException(errBody);
     }
     Map res = json.decode(resp.body);
     return res;

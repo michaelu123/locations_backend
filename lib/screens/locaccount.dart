@@ -89,6 +89,7 @@ class LocAuth {
   }
 
   signOut() {
+    if (_controller == null) return;
     print("Signed out");
     _controller.addError("error");
   }
@@ -139,19 +140,8 @@ class _LocAccountScreenState extends State<LocAccountScreen> {
         String username = authResult.username;
         settingsNL.setConfigValue("username", username);
       } else {
-        try {
-          authResult = await auth.postAuth("signon",
-              email: email, password: password, username: username);
-        } catch (err) {
-          if (err.message == null || !err.message.contains("already in use")) {
-            throw (err);
-          }
-          authResult = await auth.postAuth(
-            "login",
-            email: email,
-            password: password,
-          );
-        }
+        authResult = await auth.postAuth("signon",
+            email: email, password: password, username: username);
         settingsNL.setConfigValue("username", username);
       }
     } catch (err) {
@@ -159,7 +149,7 @@ class _LocAccountScreenState extends State<LocAccountScreen> {
       try {
         message = err.message;
       } catch (_) {}
-      print("plaex $err $message");
+      print("ex $err $message");
       ScaffoldMessenger.of(ctx).showSnackBar(
         SnackBar(
           content: Text(message),
