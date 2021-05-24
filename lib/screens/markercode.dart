@@ -79,7 +79,7 @@ class _MarkerCodeScreenState extends State<MarkerCodeScreen> {
       if (progs[name] == null) {
         File f = File(path.join(markerCodePath, name + ".json"));
         if (!await f.exists()) {
-          message("Datei $f nicht gefunden");
+          screenMessage(context, "Datei $f nicht gefunden");
           return;
         }
         final content = await f.readAsString();
@@ -124,7 +124,7 @@ class _MarkerCodeScreenState extends State<MarkerCodeScreen> {
       return;
     }
     if (nameCtrlr.text == "" || descCtrlr.text == "") {
-      message('Bitte alle Felder ausfüllen');
+      screenMessage(context, 'Bitte alle Felder ausfüllen');
       return;
     }
     errorMessage = null;
@@ -158,22 +158,6 @@ class _MarkerCodeScreenState extends State<MarkerCodeScreen> {
     await strgClntNL.deleteMarkerCode(tableBase, progName);
     File f = File(path.join(markerCodePath, progName + ".json"));
     f.delete();
-  }
-
-  Future<void> message(String msg) {
-    return showDialog(
-      context: context,
-      builder: (context) => new AlertDialog(
-        title: const Text('Fehler'),
-        content: Text(msg),
-        actions: <Widget>[
-          TextButton(
-            child: const Text("OK"),
-            onPressed: () => Navigator.of(context).pop(false),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

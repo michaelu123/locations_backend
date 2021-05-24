@@ -54,7 +54,8 @@ class LocationsDB {
     return keyFor(data["lat_round"].toString(), data["lon_round"].toString());
   }
 
-  static Future<int> insert(String table, Map<String, Object> data) async {
+  static Future<int> insert(
+      String table, Map<String, Object> data, String userName) async {
     String key = keyOf(data);
     List<Map<String, Object>> entries = locDataDB[table][key];
     if (entries == null) {
@@ -63,6 +64,11 @@ class LocationsDB {
     } else {
       switch (table) {
         case "daten": // server has primary key (creator, lat, lon)
+          if (userName != "admin") {
+            // if not admin, behave like the app, where only the most recent
+            // entry is displayed, i.e. locData.length will be 0 or 1
+            entries.clear();
+          }
           final creator = data["creator"];
           entries.removeWhere((row) => row["creator"] == creator);
           break;
@@ -137,8 +143,8 @@ class LocationsDB {
     };
   }
 
-  static Future<Map> updateRowDB(String table, String region, String name,
-      Object val, String userName, int index) async {
+  static Map updateRowDB(String table, String region, String name, Object val,
+      String userName, int index) {
     final now = dateFormatterDB.format(DateTime.now());
     List l = getLocData(table, latRound, lonRound);
     Map<String, Object> m = l[index];
@@ -294,7 +300,7 @@ class LocationsDB {
     }
   }
 
-  static Future<void> fillWithDBValues(Map values) async {
+  static Future<void> fillWithDBValues(Map values, String userName) async {
     Map newData = await getNewData(); // save new data
     for (String table in values.keys) {
       List rows = values[table];
@@ -308,7 +314,7 @@ class LocationsDB {
           data[cnames[i]] = row[i];
         }
         data["new_or_modified"] = null;
-        insert(table, data);
+        insert(table, data, userName);
       }
       Map<String, List<Map<String, Object>>> entries = locDataDB[table];
       for (List<Map<String, Object>> locs in entries.values) {
@@ -324,7 +330,7 @@ class LocationsDB {
       // restore new data
       rows = newData[table];
       for (final map in rows) {
-        insert(table, map);
+        insert(table, map, userName);
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:locations/providers/settings.dart';
 import 'package:locations/utils/db.dart';
 import 'package:locations/providers/loc_data.dart';
 import 'package:locations/screens/bilder.dart';
@@ -18,9 +19,14 @@ class ZusatzScreen extends StatefulWidget {
 
 class _ZusatzScreenState extends State<ZusatzScreen>
     with Felder, SingleTickerProviderStateMixin {
+  Settings settingsNL;
+  String userName;
+
   @override
   void initState() {
     super.initState();
+    settingsNL = Provider.of<Settings>(context, listen: false);
+    userName = settingsNL.getConfigValueS("username");
     initFelder(context, true);
   }
 
@@ -48,11 +54,12 @@ class _ZusatzScreenState extends State<ZusatzScreen>
       appBar: AppBar(
         title: Text(baseConfig.getName() + "/Zusatz"),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed:
-                locData.isEmptyZusatz() ? null : () => deleteZusatz(locData),
-          ),
+          if (userName == "admin")
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed:
+                  locData.isEmptyZusatz() ? null : () => deleteZusatz(locData),
+            ),
         ],
       ),
       body: Column(

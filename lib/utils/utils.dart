@@ -77,3 +77,19 @@ Future<bool> areYouSure(BuildContext context, String msg) {
       ) ??
       false;
 }
+
+Future<void> screenMessage(BuildContext context, String msg) {
+  return showDialog(
+    context: context,
+    builder: (context) => new AlertDialog(
+      title: const Text('Fehler'),
+      content: Text(msg),
+      actions: <Widget>[
+        TextButton(
+          child: const Text("OK"),
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ],
+    ),
+  );
+}

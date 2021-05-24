@@ -26,6 +26,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
   Storage strgClntNL;
   Settings settingsNL;
   String tableBase;
+  String userName;
 
   @override
   void initState() {
@@ -35,6 +36,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     strgClntNL = Provider.of<Storage>(context, listen: false);
     settingsNL = Provider.of<Settings>(context, listen: false);
     tableBase = baseConfigNL.getDbTableBaseName();
+    userName = settingsNL.getConfigValueS("username");
     initFelder(context, false);
   }
 
@@ -134,7 +136,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                       'Bilder',
                     ),
                   ),
-                if (locData.moreThanOne())
+                if (userName == "admin" && locData.moreThanOne())
                   TextButton(
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.lightGreen[200],
@@ -144,7 +146,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                       'Vereinigen',
                     ),
                   ),
-                if (prevDaten != null)
+                if (userName == "admin" && prevDaten != null)
                   TextButton(
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.lightGreen[200],
@@ -155,6 +157,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
                     ),
                   ),
                 if (!locData.moreThanOne() &&
+                    userName == "admin" &&
                     (prevDaten != null || locData.creator() != "STAMM"))
                   TextButton(
                     style: TextButton.styleFrom(

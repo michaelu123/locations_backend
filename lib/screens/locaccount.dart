@@ -13,9 +13,10 @@ class LocAuth {
   static LocAuth _instance;
   StreamController _controller;
   LocationsClient _locClnt;
-  SecretKey sharedSecret;
-  AesCbc cryptAlg;
-  String id;
+  SecretKey _sharedSecret;
+  AesCbc _cryptAlg;
+  String _id;
+  String _token;
 
   static LocAuth get instance {
     if (_instance == null) _instance = LocAuth();
@@ -35,30 +36,30 @@ class LocAuth {
     }
     final myPubKey = await myKeyPair.extractPublicKey();
     final myB64 = base64.encode(myPubKey.bytes);
-    id = DateTime.now().millisecondsSinceEpoch.toString();
-    Map res = await _locClnt.kex(id, myB64);
+    _id = DateTime.now().millisecondsSinceEpoch.toString();
+    Map res = await _locClnt.kex(_id, myB64);
     final hisPublicKey =
         SimplePublicKey(base64.decode(res["pubkey"]), type: KeyPairType.x25519);
 
     // calculate the shared secret.
-    sharedSecret = await algorithm.sharedSecretKey(
+    _sharedSecret = await algorithm.sharedSecretKey(
       keyPair: myKeyPair,
       remotePublicKey: hisPublicKey,
     );
     Map cred = {
-      "id": id,
+      "id": _id,
       "email": email,
       "password": password,
       "username": username
     };
     String credJS = json.encode(cred);
     final credB = utf8.encode(credJS);
-    cryptAlg = AesCbc.with256bits(macAlgorithm: MacAlgorithm.empty);
-    final credEnc = await cryptAlg.encrypt(credB, secretKey: sharedSecret);
-    final ctxt = credEnc.cipherText;
-    final iv = credEnc.nonce;
+    _cryptAlg = AesCbc.with256bits(macAlgorithm: MacAlgorithm.empty);
+    final credEnc = await _cryptAlg.encrypt(credB, secretKey: _sharedSecret);
+    var ctxt = credEnc.cipherText;
+    var iv = credEnc.nonce;
     final credMsg = {
-      "id": id,
+      "id": _id,
       "ctxt": base64.encode(ctxt),
       "iv": base64.encode(iv)
     };
@@ -67,6 +68,21 @@ class LocAuth {
     print("map $map");
     final uc = UserCredential(map["id"], map["username"]);
     _controller.add(uc);
+
+    // compute token
+    final idB = utf8.encode(_id);
+    final idEnc = await _cryptAlg.encrypt(idB, secretKey: _sharedSecret);
+    ctxt = idEnc.cipherText;
+    iv = idEnc.nonce;
+    final tokenObj = {
+      "id": _id,
+      "idEnc": base64.encode(ctxt),
+      "iv": base64.encode(iv)
+    };
+    final tokenJS = json.encode(tokenObj);
+    final tokenB = utf8.encode(tokenJS);
+    _token = base64.encode(tokenB);
+
     return uc;
   }
 
@@ -92,6 +108,10 @@ class LocAuth {
     if (_controller == null) return;
     print("Signed out");
     _controller.addError("error");
+  }
+
+  String token() {
+    return _token;
   }
 }
 
@@ -147,7 +167,7 @@ class _LocAccountScreenState extends State<LocAccountScreen> {
     } catch (err) {
       var message = "An error occurred, please check your credentials!";
       try {
-        message = err.message;
+        message = err.msg;
       } catch (_) {}
       print("ex $err $message");
       ScaffoldMessenger.of(ctx).showSnackBar(

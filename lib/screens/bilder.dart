@@ -56,6 +56,7 @@ class _ImagesScreenState extends State<ImagesScreen>
   Settings settingsNL;
   IndexModel indexModelNL;
   String tableBase;
+  String userName;
   static DateFormat dateFormatterName = DateFormat('yyyyMMdd_HHmmss');
   static DateFormat dateFormatterDB = DateFormat('yyyy.MM.dd HH:mm:ss');
 
@@ -69,6 +70,7 @@ class _ImagesScreenState extends State<ImagesScreen>
     settingsNL = Provider.of<Settings>(context, listen: false);
     indexModelNL = Provider.of<IndexModel>(context, listen: false);
     tableBase = baseConfigNL.getDbTableBaseName();
+    userName = settingsNL.getConfigValueS("username");
 
     indexModelNL.curIndex = 0;
   }
@@ -147,7 +149,7 @@ class _ImagesScreenState extends State<ImagesScreen>
       "bemerkung": null,
       "new_or_modified": 1,
     };
-    await LocationsDB.insert("images", map);
+    await LocationsDB.insert("images", map, userName);
     await strgClntNL.post(tableBase, {
       "images": [map]
     });
@@ -180,10 +182,11 @@ class _ImagesScreenState extends State<ImagesScreen>
       appBar: AppBar(
         title: Text(baseConfig.getName() + "/Bilder"),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: locData.isEmptyImages() ? null : () => deleteImage(),
-          ),
+          if (userName == "admin")
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: locData.isEmptyImages() ? null : () => deleteImage(),
+            ),
         ],
       ),
       body: Column(

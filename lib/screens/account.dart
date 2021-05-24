@@ -62,7 +62,7 @@ class _AccountScreenState extends State<AccountScreen> {
             password: password,
           );
         } catch (err) {
-          if (err.message == null || !err.message.contains("already in use")) {
+          if (err.msg == null || !err.msg.contains("already in use")) {
             throw (err);
           }
           authResult = await auth.signInWithEmailAndPassword(
@@ -82,7 +82,7 @@ class _AccountScreenState extends State<AccountScreen> {
     } catch (err) {
       var message = "An error occurred, please check your credentials!";
       try {
-        message = err.message;
+        message = err.msg;
       } catch (_) {}
       print("plaex $err $message");
       ScaffoldMessenger.of(ctx).showSnackBar(

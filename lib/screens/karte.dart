@@ -45,7 +45,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
   Future markersFuture;
   ll.LatLng center;
   String base;
-  String message;
+  String msg;
   bool useGoogle = true;
 
   BaseConfig baseConfigNL;
@@ -54,6 +54,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
   Storage strgClntNL;
   LocData locDataNL;
   String tableBase;
+  String userName;
 
   @override
   void initState() {
@@ -65,6 +66,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     locDataNL = Provider.of<LocData>(context, listen: false);
     tableBase = baseConfigNL.getDbTableBaseName();
     fmapController = fm.MapController();
+    userName = settingsNL.getConfigValueS("username");
   }
 
   @override
@@ -228,30 +230,33 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
       mapLon - 2 * f,
       mapLon + 2 * f,
     );
-    await LocationsDB.fillWithDBValues(values);
+    await LocationsDB.fillWithDBValues(
+        values, settingsNL.getConfigValueS("username"));
   }
 
   Future<void> laden(
       Settings settings, Storage strgClnt, BaseConfig baseConfig) async {
-    if (message != null) return;
+    if (msg != null) return;
     try {
-      setState(() => message = "Lösche alte Daten");
+      setState(() => msg = "Lösche alte Daten");
       await LocationsDB.deleteOldData();
-      setState(() => message = "Lösche alte Photos");
+      setState(() => msg = "Lösche alte Photos");
       deleteAllImages(tableBase);
       settings.setConfigValue("center_lat_${baseConfig.base}", mapLat);
       settings.setConfigValue("center_lon_${baseConfig.base}", mapLon);
-      setState(() => message = "Lade neue Daten");
+      setState(() => msg = "Lade neue Daten");
       await getDataFromServer(
         strgClnt,
         tableBase,
         settings.getConfigValueS("region"),
         settings.getConfigValueI("delta"),
       );
-      setState(() => message = "Lade MapMarker");
+      setState(() => msg = "Lade MapMarker");
       await markersNL.readMarkers(baseConfig.stellen(), useGoogle, onTappedG);
+    } catch (ex) {
+      screenMessage(context, ex.toString());
     } finally {
-      setState(() => message = null);
+      setState(() => msg = null);
     }
   }
 
@@ -292,10 +297,11 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
                   ? LocAuth.instance.signOut()
                   : FirebaseAuth.instance.signOut(),
             ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () => deleteLoc(markersNL),
-            ),
+            if (userName == "admin")
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () => deleteLoc(markersNL),
+              ),
             PopupMenuButton(
               icon: const Icon(Icons.more_vert),
               // child: Text('Auswahl der Datenbasis'),
@@ -366,17 +372,19 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
                     'Zentrieren',
                   ),
                 ),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.amber,
+                if (userName == "admin")
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                    ),
+                    onPressed: () async {
+                      Navigator.of(context)
+                          .pushNamed(MarkerCodeScreen.routeName);
+                    },
+                    child: const Text(
+                      'Marker-Code',
+                    ),
                   ),
-                  onPressed: () async {
-                    Navigator.of(context).pushNamed(MarkerCodeScreen.routeName);
-                  },
-                  child: const Text(
-                    'Marker-Code',
-                  ),
-                ),
               ],
             ),
             Expanded(
@@ -433,12 +441,12 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
                         );
                       },
                     ),
-                    if (message != null)
+                    if (msg != null)
                       Center(
                         child: Card(
                           margin: EdgeInsets.all(50),
                           child: Text(
-                            message,
+                            msg,
                             style: const TextStyle(
                               backgroundColor: Colors.white,
                               color: Colors.black,

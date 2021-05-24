@@ -12,14 +12,23 @@ class Felder {
   List<void Function()> focusHandlers;
   List<TextField> textFields;
   List<TextEditingController> controllers;
+  int creatorIndex;
 
   void initFelder(BuildContext context, bool useZusatz) {
     final baseConfigNL = Provider.of<BaseConfig>(context, listen: false);
+    final locDataNL = Provider.of<LocData>(context, listen: false);
+    final markersNL = Provider.of<Markers>(context, listen: false);
+    final settingsNL = Provider.of<Settings>(context, listen: false);
+    final strgClntNL = Provider.of<Storage>(context, listen: false);
+    final userName = settingsNL.getConfigValueS("username");
+    final region = settingsNL.getConfigValueS("region");
+
     print("1initFelder ${baseConfigNL.base}");
     List felder = useZusatz
         ? baseConfigNL.getZusatzFelder()
         : baseConfigNL.getDatenFelder();
     int felderLength = felder.length;
+    creatorIndex = felder.indexWhere((feld) => feld["name"] == "creator");
     focusNodes = List.generate(
       felderLength,
       (index) => FocusNode(),
@@ -32,14 +41,9 @@ class Felder {
           if (!fn.hasFocus) {
             final l = fixText(controllers[index].text, felder[index]);
             controllers[index].text = l[0];
-            // can call Provider here because cb is called in other context
-            final locDataNL = Provider.of<LocData>(context, listen: false);
-            final markersNL = Provider.of<Markers>(context, listen: false);
-            final settingsNL = Provider.of<Settings>(context, listen: false);
-            final strgClntNL = Provider.of<Storage>(context, listen: false);
-            final userName = settingsNL.getConfigValueS("username");
-            final region = settingsNL.getConfigValueS("region");
-
+            if (userName != "admin") {
+              controllers[creatorIndex].text = userName;
+            }
             locDataNL.setFeld(markersNL, region, felder[index]['name'],
                 felder[index]["type"], l[1], userName, strgClntNL);
           }
@@ -74,15 +78,10 @@ class Felder {
           onSubmitted: (text) {
             final l = fixText(text, feld);
             controllers[index].text = l[0];
+            if (userName != "admin") {
+              controllers[creatorIndex].text = userName;
+            }
             // print("onsubmitted $text");
-
-            final locDataNL = Provider.of<LocData>(context, listen: false);
-            final markersNL = Provider.of<Markers>(context, listen: false);
-            final settingsNL = Provider.of<Settings>(context, listen: false);
-            final strgClntNL = Provider.of<Storage>(context, listen: false);
-            final userName = settingsNL.getConfigValueS("username");
-            final region = settingsNL.getConfigValueS("region");
-
             locDataNL.setFeld(markersNL, region, feld['name'], feldType, l[1],
                 userName, strgClntNL);
             int x1 = (index + 1) % felderLength;

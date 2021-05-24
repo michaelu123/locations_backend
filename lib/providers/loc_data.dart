@@ -78,7 +78,10 @@ class LocData with ChangeNotifier {
       final v = row[name];
       if (v != val) {
         row[name] = val;
-        res = await LocationsDB.updateRowDB(
+        if (userName != "admin") {
+          row["creator"] = userName;
+        }
+        res = LocationsDB.updateRowDB(
             "zusatz", region, name, val, userName, zusatzIndex);
       }
     } else {
@@ -87,7 +90,10 @@ class LocData with ChangeNotifier {
       final v = row[name];
       if (v != val) {
         row[name] = val;
-        res = await LocationsDB.updateRowDB(
+        if (userName != "admin") {
+          row["creator"] = userName;
+        }
+        res = LocationsDB.updateRowDB(
             "daten", region, name, val, userName, datenIndex);
         // print("LocDatum $name changed from $v to $val");
       }

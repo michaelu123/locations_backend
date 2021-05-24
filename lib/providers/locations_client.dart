@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:locations/screens/locaccount.dart';
 import 'package:path/path.dart' as path;
 import 'package:cryptography/cryptography.dart';
 
@@ -12,6 +13,7 @@ class LocationsClient {
   String serverUrl;
   String extPath;
   bool hasZusatz;
+  String id;
 
   Future<void> init(String serverUrl, String extPath, bool hasZusatz) async {
     this.serverUrl = serverUrl;
@@ -91,6 +93,7 @@ class LocationsClient {
       throw HttpException(errBody);
     }
     dynamic res = json.decode(resp.body);
+    checkExpiration(resp.headers["x-auth"]);
     return res;
   }
 
@@ -185,7 +188,10 @@ class LocationsClient {
   Future<Map> post(String tableBase, Map values) async {
     // values is a Map {table: [{colname:colvalue},...]}
     Map res;
-    Map<String, String> headers = {"Content-type": "application/json"};
+    Map<String, String> headers = {
+      "Content-type": "application/json",
+      "x-auth": LocAuth.instance.token()
+    };
     for (final table in values.keys) {
       String req = "/add/${tableBase}_$table";
       List vals = values[table];
@@ -210,10 +216,12 @@ class LocationsClient {
   Future<Map> getValuesWithin(String tableBase, String region, double minlat,
       double maxlat, double minlon, double maxlon) async {
     final res = {};
+    Map<String, String> headers = {"x-auth": LocAuth.instance.token()};
+
     for (String table in ["daten", if (hasZusatz) "zusatz", "images"]) {
       String req =
           "/region/${tableBase}_$table?minlat=$minlat&maxlat=$maxlat&minlon=$minlon&maxlon=$maxlon&region=$region";
-      List res2 = await reqWithRetry("GET", req);
+      List res2 = await reqWithRetry("GET", req, headers: headers);
       res[table] = res2;
     }
     return res;
@@ -326,6 +334,11 @@ class LocationsClient {
     };
     String req = "/auth/" + loginOrSignon;
     Map m = await reqWithRetry("POST", req, body: cred, headers: headers);
+    id = m["id"];
     return m;
+  }
+
+  void checkExpiration(String xauth) {
+    print("checkExp $xauth");
   }
 }
