@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:locations/providers/markers.dart';
 import 'package:locations/providers/storage.dart';
 // import 'package:locations/providers/markers.dart';
 import 'package:locations/utils/db.dart';
@@ -7,6 +8,7 @@ import 'package:locations/providers/settings.dart';
 import 'package:locations/screens/zusatz.dart';
 import 'package:locations/screens/bilder.dart';
 import 'package:locations/screens/karte.dart';
+import 'package:locations/utils/utils.dart';
 import 'package:provider/provider.dart';
 
 import 'package:locations/providers/base_config.dart';
@@ -22,6 +24,7 @@ class DatenScreen extends StatefulWidget {
 class _DatenScreenState extends State<DatenScreen> with Felder {
   List prevDaten;
   BaseConfig baseConfigNL;
+  Markers markersNL;
   LocData locDataNL;
   Storage strgClntNL;
   Settings settingsNL;
@@ -32,6 +35,7 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
   void initState() {
     super.initState();
     baseConfigNL = Provider.of<BaseConfig>(context, listen: false);
+    markersNL = Provider.of<Markers>(context, listen: false);
     locDataNL = Provider.of<LocData>(context, listen: false);
     strgClntNL = Provider.of<Storage>(context, listen: false);
     settingsNL = Provider.of<Settings>(context, listen: false);
@@ -72,6 +76,29 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
     val.remove("_united");
     prevDaten = null;
     setState(() {});
+    locDataNL.notifyListeners();
+  }
+
+  Future<void> deleteLoc(Markers markers) async {
+    if (!await areYouSure(context,
+        'Wollen Sie wirklich ALLE Daten und Bilder dieses Ortes löschen?'))
+      return;
+    LocationsDB.deleteLoc(
+      LocationsDB.latRound,
+      LocationsDB.lonRound,
+    );
+    await strgClntNL.deleteLoc(
+        tableBase, LocationsDB.latRound, LocationsDB.lonRound);
+    int imgCnt = locDataNL.getImagesCount();
+    for (int i = 0; i < imgCnt; i++) {
+      String imgPath = locDataNL.getImgPath(i);
+      await strgClntNL.deleteImage(tableBase, imgPath);
+    }
+    markers.deleteLoc(LocationsDB.latRound, LocationsDB.lonRound);
+    locDataNL.clearLocData();
+    setState(() {});
+    Navigator.of(context)
+        .pushNamedAndRemoveUntil(KartenScreen.routeName, (_) => false);
   }
 
   @override
@@ -85,9 +112,13 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
         return prevDaten == null;
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(baseConfig.getName() + "/Daten"),
-        ),
+        appBar: AppBar(title: Text(baseConfig.getName() + "/Daten"), actions: [
+          if (userName == "admin")
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () => deleteLoc(markersNL),
+            ),
+        ]),
         body: Column(
           children: [
             Row(

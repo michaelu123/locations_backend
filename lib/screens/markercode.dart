@@ -14,7 +14,7 @@ import 'package:locations/providers/storage.dart';
 import 'package:provider/provider.dart';
 
 class MarkerCodeScreen extends StatefulWidget {
-  static String routeName = "/photo";
+  static String routeName = "/markercode";
 
   @override
   _MarkerCodeScreenState createState() => _MarkerCodeScreenState();

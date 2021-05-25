@@ -117,9 +117,7 @@ class Markers extends ChangeNotifier {
     return gmSet;
   }
 
-  void deleteLoc(double lat, double lon) {
-    String latRound = roundDS(lat, stellen);
-    String lonRound = roundDS(lon, stellen);
+  void deleteLoc(String latRound, String lonRound) {
     String key = "$latRound:$lonRound";
     _markers.remove(key);
     changedF = true;

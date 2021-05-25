@@ -206,18 +206,6 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     }
   }
 
-  Future<void> deleteLoc(Markers markers) async {
-    if (!await areYouSure(context, 'Wollen Sie den Ort wirklich löschen?'))
-      return;
-    int stellen = baseConfigNL.stellen();
-    String latRound = roundDS(mapLat, stellen);
-    String lonRound = roundDS(mapLon, stellen);
-    LocationsDB.deleteLoc(latRound, lonRound);
-    await strgClntNL.deleteLoc(tableBase, latRound, lonRound);
-    markers.deleteLoc(mapLat, mapLon);
-    setState2();
-  }
-
   Future<void> getDataFromServer(
       Storage strgClnt, String tableName, String region, int delta) async {
     double f = delta / 1000;
@@ -297,11 +285,6 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
                   ? LocAuth.instance.signOut()
                   : FirebaseAuth.instance.signOut(),
             ),
-            if (userName == "admin")
-              IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () => deleteLoc(markersNL),
-              ),
             PopupMenuButton(
               icon: const Icon(Icons.more_vert),
               // child: Text('Auswahl der Datenbasis'),

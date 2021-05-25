@@ -97,9 +97,14 @@ class LocationsClient {
     return res;
   }
 
+  // why the retry?
   Future<dynamic> reqWithRetry(String method, String req,
       {Map<String, String> headers, dynamic body}) async {
     dynamic res;
+    if (headers == null) {
+      headers = Map<String, String>();
+    }
+    headers["x-auth"] = LocAuth.instance.token();
     try {
       res = await _req2(
         method,
@@ -107,19 +112,21 @@ class LocationsClient {
         headers: headers,
         body: body,
       );
-    } catch (e) {
-      print("http exc $e");
-      res = await _req2(
-        method,
-        req,
-        headers: headers,
-        body: body,
-      );
+    } catch (ex) {
+      throw (ex);
+      // print("http exc $ex");
+      // res = await _req2(
+      //   method,
+      //   req,
+      //   headers: headers,
+      //   body: body,
+      // );
     }
     return res;
   }
 
-  Future<Uint8List> _reqGetBytes(String req, {Map headers}) async {
+  Future<Uint8List> _reqGetBytes(String req,
+      {Map<String, String> headers}) async {
     http.Response resp =
         await http.get(Uri.parse(serverUrl + req), headers: headers);
     if (resp.statusCode >= 400) {
@@ -132,21 +139,30 @@ class LocationsClient {
       } catch (ex) {}
       throw HttpException(errBody);
     }
+    checkExpiration(resp.headers["x-auth"]);
     return resp.bodyBytes;
   }
 
-  Future<Uint8List> reqGetBytesWithRetry(String req, {Map headers}) async {
+  // why the retry?
+  Future<Uint8List> reqGetBytesWithRetry(String req,
+      {Map<String, String> headers}) async {
     Uint8List res;
+    if (headers == null) {
+      headers = Map();
+    }
+    headers["x-auth"] = LocAuth.instance.token();
     try {
       res = await _reqGetBytes(req, headers: headers);
     } catch (e) {
-      print("http exc $e");
-      res = await _reqGetBytes(req, headers: headers);
+      throw (e);
+      // print("http exc $e");
+      // res = await _reqGetBytes(req, headers: headers);
     }
     return res;
   }
 
-  Future<Map> _reqPostBytes(String req, Uint8List body, {Map headers}) async {
+  Future<Map> _reqPostBytes(String req, Uint8List body,
+      {Map<String, String> headers}) async {
     http.Response resp = await http.post(Uri.parse(serverUrl + req),
         headers: headers, body: body);
     if (resp.statusCode >= 400) {
@@ -159,18 +175,25 @@ class LocationsClient {
       } catch (ex) {}
       throw HttpException(errBody);
     }
+    checkExpiration(resp.headers["x-auth"]);
     Map res = json.decode(resp.body);
     return res;
   }
 
+  // why the retry?
   Future<Map> reqPostBytesWithRetry(String req, Uint8List body,
-      {Map headers}) async {
+      {Map<String, String> headers}) async {
+    if (headers == null) {
+      headers = {};
+    }
+    headers["x-auth"] = LocAuth.instance.token();
     Map res;
     try {
       res = await _reqPostBytes(req, body, headers: headers);
     } catch (e) {
-      print("http exc $e");
-      res = await _reqPostBytes(req, body, headers: headers);
+      throw (e);
+      // print("http exc $e");
+      // res = await _reqPostBytes(req, body, headers: headers);
     }
     return res;
   }
@@ -190,7 +213,6 @@ class LocationsClient {
     Map res;
     Map<String, String> headers = {
       "Content-type": "application/json",
-      "x-auth": LocAuth.instance.token()
     };
     for (final table in values.keys) {
       String req = "/add/${tableBase}_$table";
@@ -216,12 +238,10 @@ class LocationsClient {
   Future<Map> getValuesWithin(String tableBase, String region, double minlat,
       double maxlat, double minlon, double maxlon) async {
     final res = {};
-    Map<String, String> headers = {"x-auth": LocAuth.instance.token()};
-
     for (String table in ["daten", if (hasZusatz) "zusatz", "images"]) {
       String req =
           "/region/${tableBase}_$table?minlat=$minlat&maxlat=$maxlat&minlon=$minlon&maxlon=$maxlon&region=$region";
-      List res2 = await reqWithRetry("GET", req, headers: headers);
+      List res2 = await reqWithRetry("GET", req);
       res[table] = res2;
     }
     return res;
@@ -302,7 +322,7 @@ class LocationsClient {
   Future<void> postMarkerCode(
       String tableBase, String name, String codeJS) async {
     String req = "/addmarkercode/$tableBase/$name";
-    final headers = {"Content-type": "text/plain"};
+    Map<String, String> headers = {"Content-type": "text/plain"};
     Map res = await reqWithRetry("POST", req, body: codeJS, headers: headers);
     return res;
   }
