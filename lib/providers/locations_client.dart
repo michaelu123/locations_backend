@@ -86,6 +86,9 @@ class LocationsClient {
     if (resp.statusCode >= 400) {
       String errBody = resp.body;
       print("req2 code ${resp.statusCode} ${resp.reasonPhrase} $errBody");
+      if (resp.statusCode == 401) {
+        checkExpiration(null);
+      }
       try {
         Map m = json.decode(errBody);
         errBody = m.values.first;
@@ -360,5 +363,10 @@ class LocationsClient {
 
   void checkExpiration(String xauth) {
     print("checkExp $xauth");
+    if (xauth == "SOON") {
+      LocAuth.instance.signOutSoon();
+    } else if (xauth == null) {
+      LocAuth.instance.signOut();
+    }
   }
 }

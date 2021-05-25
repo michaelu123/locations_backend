@@ -397,4 +397,12 @@ class LocData with ChangeNotifier {
     if (locDaten.length != 1) return "";
     return locDaten[0]["creator"];
   }
+
+  Map<String, Object> makeOfficial() {
+    final m = getDaten();
+    m["creator"] = "STAMM";
+    m.remove("_united");
+    notifyListeners();
+    return m;
+  }
 }

@@ -5,6 +5,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:locations/providers/locations_client.dart';
 import 'package:locations/providers/settings.dart';
+import 'package:locations/utils/utils.dart';
 import 'package:locations/widgets/app_config.dart';
 import 'package:locations/widgets/auth_form.dart';
 import 'package:provider/provider.dart';
@@ -108,6 +109,11 @@ class LocAuth {
     if (_controller == null) return;
     print("Signed out");
     _controller.addError("error");
+  }
+
+  void signOutSoon() {
+    screenMessageNoContext("Bitte neu einloggen!");
+    signOut();
   }
 
   String token() {

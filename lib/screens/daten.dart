@@ -70,13 +70,10 @@ class _DatenScreenState extends State<DatenScreen> with Felder {
   }
 
   void offiziell() async {
-    Map<String, Object> val = locDataNL.getDaten();
-    val["creator"] = "STAMM";
+    Map<String, Object> val = locDataNL.makeOfficial();
     await strgClntNL.official(tableBase, val);
-    val.remove("_united");
     prevDaten = null;
     setState(() {});
-    locDataNL.notifyListeners();
   }
 
   Future<void> deleteLoc(Markers markers) async {

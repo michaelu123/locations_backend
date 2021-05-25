@@ -82,7 +82,7 @@ Future<void> screenMessage(BuildContext context, String msg) {
   return showDialog(
     context: context,
     builder: (context) => new AlertDialog(
-      title: const Text('Fehler'),
+      title: const Text('Achtung'),
       content: Text(msg),
       actions: <Widget>[
         TextButton(
@@ -92,4 +92,11 @@ Future<void> screenMessage(BuildContext context, String msg) {
       ],
     ),
   );
+}
+
+// https://stackoverflow.com/questions/56280736/alertdialog-without-context-in-flutter
+final navigatorKey = GlobalKey<NavigatorState>(); // see main.dart
+
+Future<void> screenMessageNoContext(String msg) {
+  return screenMessage(navigatorKey.currentContext, msg);
 }
