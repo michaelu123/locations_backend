@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 // import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:locations/screens/locaccount.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
@@ -88,11 +88,11 @@ class MyApp extends StatelessWidget {
                     ),
                   );
                 }
-                // return KartenScreen();
                 return StreamBuilder(
                   stream: useLoc
-                      ? LocAuth.instance.authStateChanges(strgClnt.locClnt)
-                      : FirebaseAuth.instance.authStateChanges(),
+                      ? LocAuth.instance
+                          .authStateChanges(strgClnt.locClnt, settings)
+                      : null /*FirebaseAuth.instance.authStateChanges()*/,
                   builder: (ctx, snapShot) {
                     if (snapShot.connectionState == ConnectionState.waiting) {
                       return SplashScreen();
@@ -131,44 +131,52 @@ class MyApp extends StatelessWidget {
     final configPath = path.join(extPath, "config");
     Directory configDir = Directory(configPath);
     await configDir.create();
+
     await settings.getSharedPreferences();
     String serverName = settings.getConfigValueS("servername");
     int serverPort = settings.getConfigValueI("serverport");
     String serverUrl = "http://$serverName:$serverPort";
-    settings.setConfigValue("username", "MUH");
+    msgModel.setMessage("Der Server wird über die URL $serverUrl angesprochen");
 
     // firebase not supported on Windows? See
     // https://stackoverflow.com/questions/62743910/flutterhow-can-we-use-firebase-database-with-desktop-application
-    //final fbApp = await Firebase.initializeApp();
-    //print("fbapp $fbApp");
+    // final fbApp = await Firebase.initializeApp();
+    // print("fbapp $fbApp");
+
     settings.setConfigValue(
         "storage", "LocationsServer"); // until Firebase works on windows
     useLoc = settings.getConfigValueS("storage", defVal: "LocationsServer") ==
         "LocationsServer";
     strgClnt.setClnt(useLoc);
-    await strgClnt.init(
-      serverUrl: serverUrl,
-      extPath: extPath,
-      datenFelder: [],
-      zusatzFelder: [],
-      imagesFelder: [],
-    );
 
-    msgModel.setMessage("Lade Konfigurationsdateien von $serverUrl...");
-    try {
-      List configs = await strgClnt.getConfigs();
-      print("lc $configs");
-      for (String config in configs) {
-        File f = File(path.join(configPath, config));
-        if (await f.exists()) continue;
-        Map cmap = await strgClnt.getConfig(config);
-        await f.writeAsString(json.encode(cmap), flush: true);
-        print("ok");
+    for (String surl in [
+      serverUrl,
+      "http://locationsserver.feste-ip.net:52733",
+    ]) {
+      strgClnt.init(
+        serverUrl: surl,
+        extPath: extPath,
+        datenFelder: [],
+        zusatzFelder: [],
+        imagesFelder: [],
+      );
+      msgModel.setMessage("Lade Konfigurationsdateien von $surl...");
+      try {
+        List configs = await strgClnt.getConfigs();
+        serverUrl = surl;
+        print("lc $configs");
+        for (String config in configs) {
+          File f = File(path.join(configPath, config));
+          if (await f.exists()) continue;
+          Map cmap = await strgClnt.getConfig(config);
+          await f.writeAsString(json.encode(cmap), flush: true);
+          print("ok");
+        }
+        break;
+      } catch (e) {
+        msgModel.setMessage("Fehler $e");
       }
-    } catch (e) {
-      msgModel.setMessage("Fehler $e");
     }
-
     var bc = Map<String, List>();
     msgModel.setMessage("Lade Konfigurationsdateien von $configDir");
     List<FileSystemEntity> configFiles = await configDir.list().toList();
@@ -199,7 +207,7 @@ class MyApp extends StatelessWidget {
     baseConfig.setInitially(bc, settings.initialBase());
     await LocationsDB.setBaseDB(baseConfig);
 
-    await strgClnt.init(
+    strgClnt.init(
       serverUrl: serverUrl,
       extPath: extPath,
       datenFelder: baseConfig.getDbDatenFelder(),

@@ -48,6 +48,7 @@ class _AuthFormState extends State<AuthForm> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // altgr bug: https://github.com/flutter/flutter/issues/78005
                   TextFormField(
                     key: ValueKey('email'),
                     autocorrect: false,

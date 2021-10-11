@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -272,6 +272,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
     final useLoc =
         settings.getConfigValueS("storage", defVal: "LocationsServer") ==
             "LocationsServer";
+
     return WillPopScope(
       onWillPop: _onBackPressed,
       child: Scaffold(
@@ -283,7 +284,7 @@ class _KartenScreenState extends State<KartenScreen> with Felder {
               icon: const Icon(Icons.exit_to_app),
               onPressed: () => useLoc
                   ? LocAuth.instance.signOut()
-                  : FirebaseAuth.instance.signOut(),
+                  : null /* FirebaseAuth.instance.signOut() */,
             ),
             PopupMenuButton(
               icon: const Icon(Icons.more_vert),

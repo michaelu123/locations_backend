@@ -6,7 +6,6 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:locations/screens/locaccount.dart';
 import 'package:path/path.dart' as path;
-import 'package:cryptography/cryptography.dart';
 
 class LocationsClient {
   //"http://raspberrylan.1qgrvqjevtodmryr.myfritz.net:80/";
@@ -15,60 +14,28 @@ class LocationsClient {
   bool hasZusatz;
   String id;
 
-  Future<void> init(String serverUrl, String extPath, bool hasZusatz) async {
+  void init(String serverUrl, String extPath, bool hasZusatz) {
     this.serverUrl = serverUrl;
     this.extPath = extPath;
     this.hasZusatz = hasZusatz;
+  }
 
-    // https: //cryptography.io/en/latest/hazmat/primitives/asymmetric/x25519/
-    final algorithm = X25519();
-
-    // Alice chooses her key pair
-    final aliceKeyPair = await algorithm.newKeyPair();
-
-    // // Alice knows Bob's public key
-    // final bobKeyPair = await algorithm.newKeyPair();
-    // final bobPublicKey = await bobKeyPair.extractPublicKey();
-
-    // final bobPublicKeyBytes = bobPublicKey.bytes;
-    // final bobPublicKey2 =
-    //     SimplePublicKey(bobPublicKeyBytes, type: KeyPairType.x25519);
-
-    final alicePubKey = await aliceKeyPair.extractPublicKey();
-    final aliceB64 = base64.encode(alicePubKey.bytes);
-    Map res = await kex("ich", aliceB64);
-    final bobPublicKey2 =
-        SimplePublicKey(base64.decode(res["pubkey"]), type: KeyPairType.x25519);
-
-    // Alice calculates the shared secret.
-    final sharedSecret = await algorithm.sharedSecretKey(
-      keyPair: aliceKeyPair,
-      //remotePublicKey: bobPublicKey,
-      remotePublicKey: bobPublicKey2,
-    );
-    final sharedSecretBytes = await sharedSecret.extractBytes();
-    final sharedSecretB64 = base64.encode(sharedSecretBytes);
-    print('Shared secret: $sharedSecretB64');
-
-    final message = utf8.encode("dies ist ein test");
-    final cryptAlg = AesCbc.with256bits(macAlgorithm: MacAlgorithm.empty);
-    final encMsg = await cryptAlg.encrypt(message,
-        secretKey: SecretKey(sharedSecretBytes));
-    final ctxt = encMsg.cipherText;
-    final iv = encMsg.nonce;
-
-    // final mac = encMsg.mac; // = Mac.empty
-    final secBox = SecretBox(ctxt, nonce: iv, mac: Mac.empty);
-    final decMsg1 =
-        await cryptAlg.decrypt(encMsg, secretKey: SecretKey(sharedSecretBytes));
-    final decMsg2 =
-        await cryptAlg.decrypt(secBox, secretKey: SecretKey(sharedSecretBytes));
-    print("msg1 ${utf8.decode(decMsg1)}");
-    print("msg2 ${utf8.decode(decMsg2)}");
-
-    res = await test("ich", base64.encode(ctxt), base64.encode(iv));
-    print("resp $res");
-    print("msg3 ${res['res']}");
+  void checkError(http.Response resp, String fct) {
+    if (resp.statusCode >= 400) {
+      String errBody = resp.body;
+      print("$fct code ${resp.statusCode} ${resp.reasonPhrase} $errBody");
+      if (resp.statusCode == 401) {
+        checkExpiration(null);
+      }
+      try {
+        Map m = json.decode(errBody);
+        errBody = m.values.first;
+      } catch (_) {}
+      throw HttpException(errBody);
+    }
+    if (resp.headers.keys.contains("x-auth")) {
+      checkExpiration(resp.headers["x-auth"]);
+    }
   }
 
   Future<dynamic> _req2(String method, String req,
@@ -83,20 +50,8 @@ class LocationsClient {
       resp = await http.post(Uri.parse(serverUrl + req),
           headers: headers, body: body);
     }
-    if (resp.statusCode >= 400) {
-      String errBody = resp.body;
-      print("req2 code ${resp.statusCode} ${resp.reasonPhrase} $errBody");
-      if (resp.statusCode == 401) {
-        checkExpiration(null);
-      }
-      try {
-        Map m = json.decode(errBody);
-        errBody = m.values.first;
-      } catch (_) {}
-      throw HttpException(errBody);
-    }
+    checkError(resp, "req2");
     dynamic res = json.decode(resp.body);
-    checkExpiration(resp.headers["x-auth"]);
     return res;
   }
 
@@ -107,7 +62,7 @@ class LocationsClient {
     if (headers == null) {
       headers = Map<String, String>();
     }
-    headers["x-auth"] = LocAuth.instance.token();
+    headers["x-auth"] = await LocAuth.instance.token();
     try {
       res = await _req2(
         method,
@@ -132,17 +87,7 @@ class LocationsClient {
       {Map<String, String> headers}) async {
     http.Response resp =
         await http.get(Uri.parse(serverUrl + req), headers: headers);
-    if (resp.statusCode >= 400) {
-      String errBody = resp.body;
-      print(
-          "reqGetBytes code ${resp.statusCode} ${resp.reasonPhrase} $errBody");
-      try {
-        Map m = json.decode(errBody);
-        errBody = m.values.first;
-      } catch (ex) {}
-      throw HttpException(errBody);
-    }
-    checkExpiration(resp.headers["x-auth"]);
+    checkError(resp, "reqGetBytes");
     return resp.bodyBytes;
   }
 
@@ -153,7 +98,7 @@ class LocationsClient {
     if (headers == null) {
       headers = Map();
     }
-    headers["x-auth"] = LocAuth.instance.token();
+    headers["x-auth"] = await LocAuth.instance.token();
     try {
       res = await _reqGetBytes(req, headers: headers);
     } catch (e) {
@@ -168,17 +113,7 @@ class LocationsClient {
       {Map<String, String> headers}) async {
     http.Response resp = await http.post(Uri.parse(serverUrl + req),
         headers: headers, body: body);
-    if (resp.statusCode >= 400) {
-      String errBody = resp.body;
-      print(
-          "reqPostBytes code ${resp.statusCode} ${resp.reasonPhrase} $errBody");
-      try {
-        Map m = json.decode(errBody);
-        errBody = m.values.first;
-      } catch (ex) {}
-      throw HttpException(errBody);
-    }
-    checkExpiration(resp.headers["x-auth"]);
+    checkError(resp, "reqPostBytes");
     Map res = json.decode(resp.body);
     return res;
   }
@@ -189,7 +124,7 @@ class LocationsClient {
     if (headers == null) {
       headers = {};
     }
-    headers["x-auth"] = LocAuth.instance.token();
+    headers["x-auth"] = await LocAuth.instance.token();
     Map res;
     try {
       res = await _reqPostBytes(req, body, headers: headers);
@@ -252,7 +187,7 @@ class LocationsClient {
 
   Future<Map> postImage(String tableBase, String imgName) async {
     String req = "/addimage/$tableBase/$imgName";
-    final headers = {"Content-type": "image/jpeg"};
+    final Map<String, String> headers = {"Content-type": "image/jpeg"};
 
     final imgPath = path.join(extPath, tableBase, "images", imgName);
     File f = File(imgPath);
@@ -367,6 +302,15 @@ class LocationsClient {
       LocAuth.instance.signOutSoon();
     } else if (xauth == null) {
       LocAuth.instance.signOut();
+    }
+  }
+
+  bool checkToken() {
+    try {
+      reqWithRetry("GET", "/checktoken");
+      return true;
+    } catch (ex) {
+      return false;
     }
   }
 }

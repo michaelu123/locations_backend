@@ -6,7 +6,7 @@ import 'package:locations/parser/val.dart';
 import 'package:locations/providers/locations_client.dart';
 import 'package:locations/screens/locaccount.dart';
 
-import 'firebase.dart';
+import 'firebasepy.dart';
 
 class Storage extends ChangeNotifier {
   bool useLoc = true;
@@ -26,14 +26,14 @@ class Storage extends ChangeNotifier {
     if (fbClnt == null) fbClnt = FirebaseClient();
   }
 
-  Future<void> init(
+  void init(
       {String serverUrl,
       String extPath,
       List datenFelder,
       List zusatzFelder,
       List imagesFelder}) async {
     bool hasZusatz = zusatzFelder.length > 0;
-    await locClnt.init(serverUrl, extPath, hasZusatz);
+    locClnt.init(serverUrl, extPath, hasZusatz);
     fbClnt.init(extPath);
     fbClnt.initFelder(datenFelder, zusatzFelder, imagesFelder);
   }
